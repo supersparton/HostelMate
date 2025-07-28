@@ -13,77 +13,112 @@ class EmailService {
         });
     }
 
-    // Send admission acceptance email
-    async sendAdmissionAcceptance(student, roomDetails) {
+    // Send admission acceptance email with login credentials
+    async sendAdmissionAcceptance(applicantData, roomDetails, loginCredentials) {
         try {
             const mailOptions = {
                 from: process.env.EMAIL_USER,
-                to: student.userId.email,
-                subject: 'Hostel Admission Approved - Welcome to HostelMate!',
+                to: applicantData.email,
+                subject: '🎉 Congratulations! Your Hostel Admission is Approved - Welcome to HostelMate!',
                 html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <div style="background-color: #4CAF50; color: white; padding: 20px; text-align: center;">
-                            <h1>Congratulations! Your Admission is Approved</h1>
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px;">🎉 Congratulations!</h1>
+                            <p style="margin: 10px 0 0 0; font-size: 18px;">Your Hostel Admission is Approved</p>
                         </div>
                         
-                        <div style="padding: 20px; background-color: #f9f9f9;">
-                            <h2>Dear ${student.userId.name},</h2>
+                        <div style="padding: 30px; background-color: #f9f9f9;">
+                            <h2 style="color: #333; margin-top: 0;">Dear ${applicantData.name},</h2>
                             
-                            <p>We are pleased to inform you that your hostel admission application has been <strong>approved</strong>!</p>
-                            
-                            <div style="background-color: white; padding: 15px; border-left: 4px solid #4CAF50; margin: 20px 0;">
-                                <h3>Your Room Details:</h3>
-                                <ul>
-                                    <li><strong>Student ID:</strong> ${student.studentId}</li>
-                                    <li><strong>Room Number:</strong> ${roomDetails.roomNumber}</li>
-                                    <li><strong>Bed:</strong> ${roomDetails.bedLetter}</li>
-                                    <li><strong>Floor:</strong> ${roomDetails.floor}</li>
-                                    <li><strong>Wing:</strong> ${roomDetails.wing}</li>
-                                </ul>
-                            </div>
-                            
-                            <h3>Next Steps:</h3>
-                            <ol>
-                                <li>Visit the hostel office with the following documents:
-                                    <ul>
-                                        <li>This admission email (printed copy)</li>
-                                        <li>Original ID proof</li>
-                                        <li>Fee payment receipt</li>
-                                        <li>Medical certificate</li>
-                                    </ul>
-                                </li>
-                                <li>Complete the check-in process</li>
-                                <li>Collect your room keys and hostel ID card</li>
-                                <li>Download the HostelMate app to access digital services</li>
-                            </ol>
-                            
-                            <div style="background-color: #fff3cd; padding: 15px; border: 1px solid #ffeaa7; margin: 20px 0;">
-                                <h4>Important Information:</h4>
-                                <p>Please report to the hostel office within 7 days of receiving this email. Failure to do so may result in cancellation of your admission.</p>
-                            </div>
-                            
-                            <h3>Contact Information:</h3>
-                            <p>
-                                <strong>Hostel Office:</strong> ${process.env.HOSTEL_PHONE || '+91-XXX-XXX-XXXX'}<br>
-                                <strong>Email:</strong> ${process.env.ADMIN_EMAIL}<br>
-                                <strong>Office Hours:</strong> 9:00 AM - 6:00 PM (Monday to Saturday)
+                            <p style="font-size: 16px; line-height: 1.6; color: #555;">
+                                We are delighted to inform you that your hostel admission application has been <strong style="color: #4CAF50;">APPROVED</strong>! 
+                                Welcome to the HostelMate family.
                             </p>
                             
-                            <p>Welcome to the HostelMate family! We look forward to providing you with a comfortable and secure living experience.</p>
+                            <div style="background-color: white; padding: 20px; border-left: 4px solid #4CAF50; margin: 25px 0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h3 style="color: #4CAF50; margin-top: 0;">🏠 Your Room Assignment</h3>
+                                <div style="display: grid; gap: 8px;">
+                                    <p style="margin: 0;"><strong>Student ID:</strong> ${applicantData.studentId}</p>
+                                    <p style="margin: 0;"><strong>Room Number:</strong> ${roomDetails.roomNumber}</p>
+                                    <p style="margin: 0;"><strong>Bed:</strong> ${roomDetails.bedLetter}</p>
+                                    <p style="margin: 0;"><strong>Floor:</strong> ${roomDetails.floor}</p>
+                                    <p style="margin: 0;"><strong>Wing:</strong> ${roomDetails.wing}</p>
+                                </div>
+                            </div>
+
+                            <div style="background-color: #e8f5e8; padding: 20px; border: 1px solid #4CAF50; margin: 25px 0; border-radius: 4px;">
+                                <h3 style="color: #2e7d32; margin-top: 0;">🔐 Your HostelMate Login Credentials</h3>
+                                <div style="background-color: white; padding: 15px; border-radius: 4px; margin-top: 10px;">
+                                    <p style="margin: 0 0 10px 0;"><strong>Username:</strong> <code style="background: #f5f5f5; padding: 4px 8px; border-radius: 3px; font-family: monospace;">${loginCredentials.email}</code></p>
+                                    <p style="margin: 0;"><strong>Password:</strong> <code style="background: #f5f5f5; padding: 4px 8px; border-radius: 3px; font-family: monospace;">${loginCredentials.password}</code></p>
+                                </div>
+                                <p style="margin: 15px 0 0 0; font-size: 14px; color: #666;">
+                                    <strong>Important:</strong> Please change your password after your first login for security.
+                                </p>
+                            </div>
                             
-                            <p>Best regards,<br>
-                            HostelMate Administration</p>
+                            <div style="background-color: white; padding: 20px; border-radius: 4px; margin: 25px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h3 style="color: #333; margin-top: 0;">📋 Next Steps</h3>
+                                <ol style="line-height: 1.8; color: #555;">
+                                    <li><strong>Report to Hostel Office</strong> within 7 days with:
+                                        <ul style="margin: 10px 0; padding-left: 20px;">
+                                            <li>This admission email (printed copy)</li>
+                                            <li>Original ID proof (Aadhar/Passport)</li>
+                                            <li>Fee payment receipt</li>
+                                            <li>Medical certificate</li>
+                                            <li>Passport-size photographs (2 copies)</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Complete check-in process</strong> and collect your room keys</li>
+                                    <li><strong>Receive your hostel ID card</strong> and access cards</li>
+                                    <li><strong>Login to HostelMate portal</strong> using the credentials above</li>
+                                    <li><strong>Complete your profile</strong> and upload required documents</li>
+                                </ol>
+                            </div>
+                            
+                            <div style="background-color: #fff3cd; padding: 20px; border: 1px solid #ffc107; margin: 25px 0; border-radius: 4px;">
+                                <h4 style="color: #856404; margin-top: 0;">⚠️ Important Notice</h4>
+                                <p style="margin: 0; color: #856404; line-height: 1.6;">
+                                    Please report to the hostel office within <strong>7 days</strong> of receiving this email. 
+                                    Failure to complete check-in within this timeframe may result in cancellation of your admission 
+                                    and your room may be allocated to another student.
+                                </p>
+                            </div>
+                            
+                            <div style="background-color: white; padding: 20px; border-radius: 4px; margin: 25px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h3 style="color: #333; margin-top: 0;">📞 Contact Information</h3>
+                                <div style="line-height: 1.8; color: #555;">
+                                    <p style="margin: 0;"><strong>Hostel Office:</strong> ${process.env.HOSTEL_PHONE || '+91-XXX-XXX-XXXX'}</p>
+                                    <p style="margin: 0;"><strong>Email:</strong> ${process.env.ADMIN_EMAIL || 'admin@hostelmate.com'}</p>
+                                    <p style="margin: 0;"><strong>Office Hours:</strong> 9:00 AM - 6:00 PM (Monday to Saturday)</p>
+                                    <p style="margin: 0;"><strong>Emergency Contact:</strong> ${process.env.EMERGENCY_CONTACT || '+91-XXX-XXX-XXXX'}</p>
+                                </div>
+                            </div>
+                            
+                            <div style="text-align: center; margin: 30px 0;">
+                                <p style="font-size: 18px; color: #4CAF50; font-weight: bold;">Welcome to HostelMate! 🏠</p>
+                                <p style="color: #666; line-height: 1.6;">
+                                    We're excited to provide you with a comfortable, secure, and enriching living experience. 
+                                    Our team is here to support you throughout your stay.
+                                </p>
+                            </div>
+                            
+                            <p style="margin-bottom: 0; color: #333;">
+                                Best regards,<br>
+                                <strong>The HostelMate Administration Team</strong>
+                            </p>
                         </div>
                         
-                        <div style="background-color: #333; color: white; padding: 10px; text-align: center; font-size: 12px;">
-                            This is an automated email. Please do not reply to this message.
+                        <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+                            <p style="margin: 0;">This is an automated email. Please do not reply to this message.</p>
+                            <p style="margin: 5px 0 0 0;">For support, please contact us through the official channels mentioned above.</p>
                         </div>
                     </div>
                 `
             };
 
             await this.transporter.sendMail(mailOptions);
-            console.log('✅ Admission acceptance email sent to:', student.userId.email);
+            console.log('✅ Admission acceptance email sent to:', applicantData.email);
             
         } catch (error) {
             console.error('❌ Error sending admission acceptance email:', error);
@@ -92,59 +127,88 @@ class EmailService {
     }
 
     // Send admission rejection email
-    async sendAdmissionRejection(student, reason) {
+    async sendAdmissionRejection(applicantData, reason) {
         try {
             const mailOptions = {
                 from: process.env.EMAIL_USER,
-                to: student.userId.email,
-                subject: 'Hostel Admission Status Update',
+                to: applicantData.email,
+                subject: '📋 Hostel Admission Application Status Update',
                 html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <div style="background-color: #f44336; color: white; padding: 20px; text-align: center;">
-                            <h1>Admission Application Status</h1>
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #f44336, #d32f2f); color: white; padding: 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px;">📋 Application Status Update</h1>
+                            <p style="margin: 10px 0 0 0; font-size: 18px;">Hostel Admission Decision</p>
                         </div>
                         
-                        <div style="padding: 20px; background-color: #f9f9f9;">
-                            <h2>Dear ${student.userId.name},</h2>
+                        <div style="padding: 30px; background-color: #f9f9f9;">
+                            <h2 style="color: #333; margin-top: 0;">Dear ${applicantData.name},</h2>
                             
-                            <p>Thank you for your interest in HostelMate. After careful consideration, we regret to inform you that we are unable to approve your hostel admission application at this time.</p>
+                            <p style="font-size: 16px; line-height: 1.6; color: #555;">
+                                Thank you for your interest in HostelMate and for taking the time to submit your hostel admission application. 
+                                After careful consideration of all applications, we regret to inform you that we are unable to approve 
+                                your application at this time.
+                            </p>
                             
                             ${reason ? `
-                                <div style="background-color: white; padding: 15px; border-left: 4px solid #f44336; margin: 20px 0;">
-                                    <h3>Reason:</h3>
-                                    <p>${reason}</p>
+                                <div style="background-color: white; padding: 20px; border-left: 4px solid #f44336; margin: 25px 0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                    <h3 style="color: #f44336; margin-top: 0;">📝 Review Comments</h3>
+                                    <p style="margin: 0; color: #555; line-height: 1.6;">${reason}</p>
                                 </div>
                             ` : ''}
                             
-                            <h3>What's Next:</h3>
-                            <ul>
-                                <li>You may reapply for the next admission cycle</li>
-                                <li>Consider applying for our waiting list</li>
-                                <li>Contact our admission office for guidance on improving your application</li>
-                            </ul>
+                            <div style="background-color: white; padding: 20px; border-radius: 4px; margin: 25px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h3 style="color: #333; margin-top: 0;">🔄 What's Next?</h3>
+                                <ul style="line-height: 1.8; color: #555; padding-left: 20px;">
+                                    <li><strong>Reapply Next Cycle:</strong> You may reapply for the next admission cycle when applications open</li>
+                                    <li><strong>Waiting List:</strong> Consider joining our waiting list for any last-minute openings</li>
+                                    <li><strong>Alternative Options:</strong> Contact our admission office for guidance on alternative accommodation options</li>
+                                    <li><strong>Application Improvement:</strong> Request feedback to strengthen your future applications</li>
+                                </ul>
+                            </div>
                             
-                            <h3>Contact Information:</h3>
-                            <p>
-                                If you have any questions or would like feedback on your application, please contact:<br>
-                                <strong>Admission Office:</strong> ${process.env.HOSTEL_PHONE || '+91-XXX-XXX-XXXX'}<br>
-                                <strong>Email:</strong> ${process.env.ADMIN_EMAIL}
+                            <div style="background-color: #e3f2fd; padding: 20px; border: 1px solid #2196f3; margin: 25px 0; border-radius: 4px;">
+                                <h4 style="color: #1976d2; margin-top: 0;">💡 Future Opportunities</h4>
+                                <p style="margin: 0; color: #1976d2; line-height: 1.6;">
+                                    We encourage you to stay in touch with us. Many students successfully gain admission in subsequent cycles. 
+                                    Please don't hesitate to reach out if you have any questions about improving your application.
+                                </p>
+                            </div>
+                            
+                            <div style="background-color: white; padding: 20px; border-radius: 4px; margin: 25px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h3 style="color: #333; margin-top: 0;">📞 Contact Information</h3>
+                                <div style="line-height: 1.8; color: #555;">
+                                    <p style="margin: 0;"><strong>Admission Office:</strong> ${process.env.HOSTEL_PHONE || '+91-XXX-XXX-XXXX'}</p>
+                                    <p style="margin: 0;"><strong>Email:</strong> ${process.env.ADMIN_EMAIL || 'admin@hostelmate.com'}</p>
+                                    <p style="margin: 0;"><strong>Office Hours:</strong> 9:00 AM - 6:00 PM (Monday to Saturday)</p>
+                                </div>
+                                <p style="margin: 15px 0 0 0; font-size: 14px; color: #666;">
+                                    If you have any questions or would like feedback on your application, please don't hesitate to contact us.
+                                </p>
+                            </div>
+                            
+                            <div style="text-align: center; margin: 30px 0;">
+                                <p style="color: #666; line-height: 1.6;">
+                                    We appreciate your interest in HostelMate and wish you the very best in finding suitable accommodation. 
+                                    Thank you for considering us for your hostel needs.
+                                </p>
+                            </div>
+                            
+                            <p style="margin-bottom: 0; color: #333;">
+                                Best regards,<br>
+                                <strong>The HostelMate Admission Team</strong>
                             </p>
-                            
-                            <p>We appreciate your interest in HostelMate and wish you the best in your accommodation search.</p>
-                            
-                            <p>Best regards,<br>
-                            HostelMate Admission Team</p>
                         </div>
                         
-                        <div style="background-color: #333; color: white; padding: 10px; text-align: center; font-size: 12px;">
-                            This is an automated email. Please do not reply to this message.
+                        <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+                            <p style="margin: 0;">This is an automated email. Please do not reply to this message.</p>
+                            <p style="margin: 5px 0 0 0;">For inquiries, please contact us through the official channels mentioned above.</p>
                         </div>
                     </div>
                 `
             };
 
             await this.transporter.sendMail(mailOptions);
-            console.log('✅ Admission rejection email sent to:', student.userId.email);
+            console.log('✅ Admission rejection email sent to:', applicantData.email);
             
         } catch (error) {
             console.error('❌ Error sending admission rejection email:', error);
@@ -152,55 +216,41 @@ class EmailService {
         }
     }
 
-    // Send leave approval/rejection notification
-    async sendLeaveNotification(student, leaveApplication, isApproved, rejectionReason = null) {
+    // Send leave application status update
+    async sendLeaveApplicationUpdate(studentEmail, studentName, leaveApplication, status) {
         try {
-            const status = isApproved ? 'Approved' : 'Rejected';
-            const statusColor = isApproved ? '#4CAF50' : '#f44336';
+            const statusColor = status === 'APPROVED' ? '#4CAF50' : '#f44336';
+            const statusText = status === 'APPROVED' ? 'Approved' : 'Rejected';
             
             const mailOptions = {
                 from: process.env.EMAIL_USER,
-                to: student.userId.email,
-                subject: `Leave Application ${status} - ${leaveApplication._id}`,
+                to: studentEmail,
+                subject: `Leave Application ${statusText} - ${leaveApplication._id}`,
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <div style="background-color: ${statusColor}; color: white; padding: 20px; text-align: center;">
-                            <h1>Leave Application ${status}</h1>
+                            <h1>Leave Application ${statusText}</h1>
                         </div>
                         
                         <div style="padding: 20px; background-color: #f9f9f9;">
-                            <h2>Dear ${student.userId.name},</h2>
+                            <h2>Dear ${studentName},</h2>
                             
-                            <p>Your leave application has been <strong>${status.toLowerCase()}</strong>.</p>
+                            <p>Your leave application has been <strong>${statusText.toLowerCase()}</strong>.</p>
                             
                             <div style="background-color: white; padding: 15px; border-left: 4px solid ${statusColor}; margin: 20px 0;">
                                 <h3>Leave Details:</h3>
                                 <ul>
-                                    <li><strong>Application ID:</strong> ${leaveApplication._id}</li>
-                                    <li><strong>From Date:</strong> ${new Date(leaveApplication.fromDate).toDateString()}</li>
-                                    <li><strong>To Date:</strong> ${new Date(leaveApplication.toDate).toDateString()}</li>
-                                    <li><strong>Duration:</strong> ${leaveApplication.duration} days</li>
+                                    <li><strong>Leave Type:</strong> ${leaveApplication.leaveType}</li>
+                                    <li><strong>From:</strong> ${new Date(leaveApplication.startDate).toLocaleDateString()}</li>
+                                    <li><strong>To:</strong> ${new Date(leaveApplication.endDate).toLocaleDateString()}</li>
                                     <li><strong>Reason:</strong> ${leaveApplication.reason}</li>
-                                    <li><strong>Status:</strong> ${status}</li>
                                 </ul>
                             </div>
                             
-                            ${!isApproved && rejectionReason ? `
-                                <div style="background-color: #ffebee; padding: 15px; border: 1px solid #ffcdd2; margin: 20px 0;">
-                                    <h4>Rejection Reason:</h4>
-                                    <p>${rejectionReason}</p>
-                                </div>
-                            ` : ''}
-                            
-                            ${isApproved ? `
-                                <div style="background-color: #e8f5e8; padding: 15px; border: 1px solid #c8e6c9; margin: 20px 0;">
-                                    <h4>Important Reminders:</h4>
-                                    <ul>
-                                        <li>Ensure you provide emergency contact details to the warden</li>
-                                        <li>Return to hostel by the specified date</li>
-                                        <li>Inform the office immediately upon your return</li>
-                                        <li>Late return may affect future leave applications</li>
-                                    </ul>
+                            ${leaveApplication.adminComments ? `
+                                <div style="background-color: white; padding: 15px; border: 1px solid #ddd; margin: 20px 0;">
+                                    <h3>Admin Comments:</h3>
+                                    <p>${leaveApplication.adminComments}</p>
                                 </div>
                             ` : ''}
                             
@@ -209,178 +259,71 @@ class EmailService {
                             <p>Best regards,<br>
                             HostelMate Administration</p>
                         </div>
-                        
-                        <div style="background-color: #333; color: white; padding: 10px; text-align: center; font-size: 12px;">
-                            This is an automated email. Please do not reply to this message.
-                        </div>
                     </div>
                 `
             };
 
             await this.transporter.sendMail(mailOptions);
-            console.log(`✅ Leave ${status.toLowerCase()} email sent to:`, student.userId.email);
+            console.log('✅ Leave application status email sent to:', studentEmail);
             
         } catch (error) {
-            console.error(`❌ Error sending leave ${status.toLowerCase()} email:`, error);
-            throw new Error(`Failed to send leave ${status.toLowerCase()} email`);
+            console.error('❌ Error sending leave application status email:', error);
+            throw new Error('Failed to send leave application status email');
         }
     }
 
-    // Send complaint acknowledgment and updates
-    async sendComplaintNotification(student, complaint, type = 'acknowledgment') {
+    // Send complaint status update
+    async sendComplaintUpdate(studentEmail, studentName, complaint, status) {
         try {
-            let subject, content;
-            
-            switch (type) {
-                case 'acknowledgment':
-                    subject = `Complaint Received - #${complaint._id}`;
-                    content = `
-                        <p>We have received your complaint and our team will review it shortly.</p>
-                        <p><strong>Expected Resolution:</strong> ${complaint.estimatedResolutionDate ? new Date(complaint.estimatedResolutionDate).toDateString() : 'Within 3-5 business days'}</p>
-                    `;
-                    break;
-                case 'resolved':
-                    subject = `Complaint Resolved - #${complaint._id}`;
-                    content = `
-                        <p>Your complaint has been <strong>resolved</strong>.</p>
-                        ${complaint.adminResponse ? `
-                            <div style="background-color: #e8f5e8; padding: 15px; border: 1px solid #c8e6c9; margin: 20px 0;">
-                                <h4>Resolution Details:</h4>
-                                <p>${complaint.adminResponse}</p>
-                            </div>
-                        ` : ''}
-                    `;
-                    break;
-                case 'update':
-                    subject = `Complaint Update - #${complaint._id}`;
-                    content = `
-                        <p>There's an update on your complaint.</p>
-                        ${complaint.adminResponse ? `
-                            <div style="background-color: #fff3cd; padding: 15px; border: 1px solid #ffeaa7; margin: 20px 0;">
-                                <h4>Update:</h4>
-                                <p>${complaint.adminResponse}</p>
-                            </div>
-                        ` : ''}
-                    `;
-                    break;
-            }
+            const statusColor = status === 'RESOLVED' ? '#4CAF50' : '#ff9800';
             
             const mailOptions = {
                 from: process.env.EMAIL_USER,
-                to: student.userId.email,
-                subject,
+                to: studentEmail,
+                subject: `Complaint Status Update - ${complaint._id}`,
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <div style="background-color: #2196F3; color: white; padding: 20px; text-align: center;">
-                            <h1>Complaint ${type === 'acknowledgment' ? 'Received' : type === 'resolved' ? 'Resolved' : 'Update'}</h1>
+                        <div style="background-color: ${statusColor}; color: white; padding: 20px; text-align: center;">
+                            <h1>Complaint Status Update</h1>
                         </div>
                         
                         <div style="padding: 20px; background-color: #f9f9f9;">
-                            <h2>Dear ${student.userId.name},</h2>
+                            <h2>Dear ${studentName},</h2>
                             
-                            ${content}
+                            <p>Your complaint has been updated to: <strong>${status}</strong></p>
                             
-                            <div style="background-color: white; padding: 15px; border-left: 4px solid #2196F3; margin: 20px 0;">
+                            <div style="background-color: white; padding: 15px; border-left: 4px solid ${statusColor}; margin: 20px 0;">
                                 <h3>Complaint Details:</h3>
                                 <ul>
-                                    <li><strong>Complaint ID:</strong> ${complaint._id}</li>
-                                    <li><strong>Title:</strong> ${complaint.title}</li>
                                     <li><strong>Category:</strong> ${complaint.category}</li>
+                                    <li><strong>Subject:</strong> ${complaint.subject}</li>
+                                    <li><strong>Status:</strong> ${status}</li>
                                     <li><strong>Priority:</strong> ${complaint.priority}</li>
-                                    <li><strong>Status:</strong> ${complaint.status}</li>
-                                    <li><strong>Submitted:</strong> ${new Date(complaint.createdAt).toDateString()}</li>
                                 </ul>
                             </div>
                             
-                            <p>You can track your complaint status by logging into the HostelMate portal.</p>
+                            ${complaint.adminResponse ? `
+                                <div style="background-color: white; padding: 15px; border: 1px solid #ddd; margin: 20px 0;">
+                                    <h3>Admin Response:</h3>
+                                    <p>${complaint.adminResponse}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <p>Thank you for your patience. If you have any further questions, please don't hesitate to contact us.</p>
                             
                             <p>Best regards,<br>
-                            HostelMate Support Team</p>
-                        </div>
-                        
-                        <div style="background-color: #333; color: white; padding: 10px; text-align: center; font-size: 12px;">
-                            This is an automated email. Please do not reply to this message.
+                            HostelMate Administration</p>
                         </div>
                     </div>
                 `
             };
 
             await this.transporter.sendMail(mailOptions);
-            console.log(`✅ Complaint ${type} email sent to:`, student.userId.email);
+            console.log('✅ Complaint status email sent to:', studentEmail);
             
         } catch (error) {
-            console.error(`❌ Error sending complaint ${type} email:`, error);
-            throw new Error(`Failed to send complaint ${type} email`);
-        }
-    }
-
-    // Send weekly menu notification
-    async sendMenuNotification(students, menu) {
-        try {
-            const emailPromises = students.map(async (student) => {
-                const mailOptions = {
-                    from: process.env.EMAIL_USER,
-                    to: student.userId.email,
-                    subject: 'Weekly Menu Update - HostelMate',
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                            <div style="background-color: #FF9800; color: white; padding: 20px; text-align: center;">
-                                <h1>This Week's Menu</h1>
-                                <p>Week of ${new Date(menu.weekStartDate).toDateString()}</p>
-                            </div>
-                            
-                            <div style="padding: 20px; background-color: #f9f9f9;">
-                                <h2>Dear ${student.userId.name},</h2>
-                                
-                                <p>The menu for this week has been updated. Here's what's on the menu:</p>
-                                
-                                ${Object.keys(menu.menuItems).map(day => `
-                                    <div style="background-color: white; padding: 15px; margin: 10px 0; border-radius: 5px;">
-                                        <h3 style="color: #FF9800; text-transform: capitalize;">${day}</h3>
-                                        <table style="width: 100%; border-collapse: collapse;">
-                                            <tr>
-                                                <td style="padding: 5px; border-bottom: 1px solid #eee;"><strong>Breakfast:</strong></td>
-                                                <td style="padding: 5px; border-bottom: 1px solid #eee;">${menu.menuItems[day].breakfast || 'Not specified'}</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding: 5px; border-bottom: 1px solid #eee;"><strong>Lunch:</strong></td>
-                                                <td style="padding: 5px; border-bottom: 1px solid #eee;">${menu.menuItems[day].lunch || 'Not specified'}</td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding: 5px;"><strong>Dinner:</strong></td>
-                                                <td style="padding: 5px;">${menu.menuItems[day].dinner || 'Not specified'}</td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                `).join('')}
-                                
-                                <div style="background-color: #e3f2fd; padding: 15px; border: 1px solid #2196F3; margin: 20px 0;">
-                                    <h4>Reminder:</h4>
-                                    <p>Don't forget to book your meals in advance through the HostelMate app!</p>
-                                </div>
-                                
-                                <p>Enjoy your meals!</p>
-                                
-                                <p>Best regards,<br>
-                                HostelMate Kitchen Team</p>
-                            </div>
-                            
-                            <div style="background-color: #333; color: white; padding: 10px; text-align: center; font-size: 12px;">
-                                This is an automated email. Please do not reply to this message.
-                            </div>
-                        </div>
-                    `
-                };
-
-                return this.transporter.sendMail(mailOptions);
-            });
-
-            await Promise.all(emailPromises);
-            console.log(`✅ Menu notification emails sent to ${students.length} students`);
-            
-        } catch (error) {
-            console.error('❌ Error sending menu notification emails:', error);
-            throw new Error('Failed to send menu notification emails');
+            console.error('❌ Error sending complaint status email:', error);
+            throw new Error('Failed to send complaint status email');
         }
     }
 
@@ -388,10 +331,10 @@ class EmailService {
     async testConnection() {
         try {
             await this.transporter.verify();
-            console.log('✅ Email service is ready');
+            console.log('✅ Email service connection verified');
             return true;
         } catch (error) {
-            console.error('❌ Email service configuration error:', error);
+            console.error('❌ Email service connection failed:', error);
             return false;
         }
     }

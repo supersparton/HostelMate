@@ -102,12 +102,44 @@ const applicationSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Generate application ID
+// Generate application ID with proper uniqueness handling
 applicationSchema.pre('save', async function(next) {
     if (!this.applicationId) {
         const year = new Date().getFullYear();
-        const count = await mongoose.model('Application').countDocuments();
-        this.applicationId = `APP${year}${String(count + 1).padStart(4, '0')}`;
+        let applicationId;
+        let isUnique = false;
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        while (!isUnique && attempts < maxAttempts) {
+            // Get the count of existing applications for this year
+            const existingCount = await mongoose.model('Application').countDocuments({
+                applicationId: { $regex: `^APP${year}` }
+            });
+            
+            // Generate ID with sequential numbering plus some randomness to avoid conflicts
+            const sequentialNumber = existingCount + 1 + attempts;
+            applicationId = `APP${year}${String(sequentialNumber).padStart(4, '0')}`;
+            
+            // Check if this ID already exists
+            const existingApp = await mongoose.model('Application').findOne({ applicationId });
+            
+            if (!existingApp) {
+                isUnique = true;
+                this.applicationId = applicationId;
+            } else {
+                attempts++;
+                console.log(`ApplicationId ${applicationId} already exists, trying attempt ${attempts + 1}`);
+            }
+        }
+
+        if (!isUnique) {
+            // Fallback to timestamp-based ID if we can't generate a sequential one
+            const timestamp = Date.now();
+            const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            this.applicationId = `APP${year}${timestamp.toString().slice(-4)}${randomSuffix}`;
+            console.log(`Fallback to timestamp-based ID: ${this.applicationId}`);
+        }
     }
     next();
 });

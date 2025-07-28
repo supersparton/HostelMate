@@ -13,6 +13,7 @@ const CommunityPost = require('../models/CommunityPost');
 const MealBooking = require('../models/MealBooking');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { validateObjectId, handleValidationErrors } = require('../middleware/validation');
+const emailService = require('../services/emailService');
 const moment = require('moment');
 
 const router = express.Router();
@@ -1082,6 +1083,31 @@ router.post('/admissions/:applicationId/accept', async (req, res) => {
         await application.save();
         console.log('✅ STEP 4 COMPLETE: Application status updated to APPROVED');
 
+        console.log('🔄 STEP 5: Sending approval email...');
+        // Send professional approval email with login credentials
+        try {
+            await emailService.sendAdmissionAcceptance(
+                {
+                    name: application.name,
+                    email: application.email,
+                    studentId: student.studentId
+                },
+                {
+                    roomNumber: student.roomNumber,
+                    bedLetter: student.bedLetter,
+                    floor: room.floor,
+                    wing: room.wing
+                },
+                {
+                    email: user.email,
+                    password: autoPassword
+                }
+            );
+            console.log('✅ STEP 5 COMPLETE: Professional approval email sent successfully');
+        } catch (emailError) {
+            console.warn('⚠️ STEP 5 WARNING: Email sending failed, but application was approved:', emailError.message);
+        }
+
         const response = {
             success: true,
             message: 'Application approved successfully! Complete workflow executed.',
@@ -1090,7 +1116,8 @@ router.post('/admissions/:applicationId/accept', async (req, res) => {
                     step1: "✅ User account created with encrypted password",
                     step2: "✅ Student profile created with all details",
                     step3: "✅ Room bed assigned",
-                    step4: "✅ Application marked as approved"
+                    step4: "✅ Application marked as approved",
+                    step5: "✅ Professional approval email sent"
                 },
                 student: {
                     studentId: student.studentId,
@@ -1123,6 +1150,7 @@ router.post('/admissions/:applicationId/accept', async (req, res) => {
         console.log(`   - Course: ${student.course} Year ${student.year}`);
         console.log(`   - Login: ${user.email} / ${autoPassword}`);
         console.log(`   - Password: Encrypted with bcrypt`);
+        console.log(`   - Email: Professional approval email sent`);
         
         res.json(response);
 
@@ -1168,6 +1196,20 @@ router.post('/admissions/:applicationId/reject', async (req, res) => {
         application.reviewDate = new Date();
         application.reviewComments = reason || 'Application rejected';
         await application.save();
+
+        // Send professional rejection email
+        try {
+            await emailService.sendAdmissionRejection(
+                {
+                    name: application.name,
+                    email: application.email
+                },
+                reason
+            );
+            console.log('✅ Professional rejection email sent successfully');
+        } catch (emailError) {
+            console.warn('⚠️ Email sending failed, but application was rejected:', emailError.message);
+        }
 
         res.json({
             success: true,
