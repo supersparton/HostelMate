@@ -406,73 +406,50 @@ router.post('/admissions/create-simple-test', async (req, res) => {
 });
 router.get('/students', async (req, res) => {
     try {
-        const { 
-            page = 1, 
-            limit = 10, 
-            search = '',
-            roomNumber,
-            course,
-            year 
-        } = req.query;
-        
-        // Base filter: Only show currently enrolled students
-        let filter = {
-            admissionStatus: 'ACCEPTED', // Only accepted students
-            // Optionally add: isActive: true if you have this field
-        };
-        
-        // Additional filters
-        if (roomNumber) filter.roomNumber = roomNumber;
-        if (course) filter.course = { $regex: course, $options: 'i' };
-        if (year) filter.year = parseInt(year);
-        
-        if (search) {
-            filter.$or = [
-                { studentId: { $regex: search, $options: 'i' } },
-                { course: { $regex: search, $options: 'i' } },
-                { rollNumber: { $regex: search, $options: 'i' } }
-            ];
-        }
+        console.log('Fetching all students with complete details...');
 
-        console.log('Fetching currently enrolled students with filter:', filter);
-
-        const students = await Student.find(filter)
+        // Get ALL students (no filters, no pagination, no complex logic)
+        const students = await Student.find({})
             .populate('userId', 'name email phone')
-            .sort({ createdAt: -1 })
-            .limit(limit * 1)
-            .skip((page - 1) * limit);
+            .sort({ createdAt: -1 });
 
-        const total = await Student.countDocuments(filter);
+        console.log(`Found ${students.length} total students in database`);
 
-        console.log(`Found ${students.length} currently enrolled students out of ${total} total`);
-        console.log('Sample found students:', students.slice(0, 2).map(s => ({
-            id: s._id,
-            studentId: s.studentId,
-            admissionStatus: s.admissionStatus,
-            name: s.userId?.name,
-            room: s.roomNumber,
-            bed: s.bedLetter
-        })));
-        
-        // Double check - count all students with ACCEPTED status regardless of filter
-        const allAcceptedCount = await Student.countDocuments({ admissionStatus: 'ACCEPTED' });
-        console.log('Total ACCEPTED students in database (ignoring filters):', allAcceptedCount);
+        // Format response with complete student details
+        const studentsWithDetails = students.map(student => ({
+            _id: student._id,
+            studentId: student.studentId,
+            name: student.userId?.name || 'N/A',
+            email: student.userId?.email || 'N/A',
+            phone: student.userId?.phone || 'N/A',
+            course: student.course,
+            year: student.year,
+            rollNumber: student.rollNumber,
+            roomNumber: student.roomNumber,
+            bedLetter: student.bedLetter,
+            admissionStatus: student.admissionStatus,
+            admissionDate: student.admissionDate,
+            caste: student.caste,
+            religion: student.religion,
+            income: student.income,
+            parentName: student.parentName,
+            parentPhone: student.parentPhone,
+            address: student.address,
+            emergencyContact: student.emergencyContact,
+            createdAt: student.createdAt
+        }));
 
         res.json({
             success: true,
-            message: `Currently enrolled students (${total} total)`,
+            message: `All students (${students.length} total)`,
             data: {
-                students,
-                pagination: {
-                    current: page,
-                    pages: Math.ceil(total / limit),
-                    total
-                },
-                enrollmentStatus: 'ACCEPTED_ONLY'
+                students: studentsWithDetails,
+                total: students.length
             }
         });
 
     } catch (error) {
+        console.error('Error fetching students:', error);
         res.status(500).json({
             success: false,
             message: 'Error fetching students',
