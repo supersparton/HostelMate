@@ -20,7 +20,8 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { data: dashboardData, isLoading, error } = useQuery(
     'adminDashboard',
-    adminService.getDashboard
+    adminService.getDashboard,
+    { refetchInterval: 30000 } // Refresh every 30 seconds
   );
 
   // Add query for pending applications
@@ -29,9 +30,6 @@ const AdminDashboard = () => {
     () => adminService.getPendingAdmissions(),
     { refetchInterval: 5000 }
   );
-
-  console.log('Dashboard data:', dashboardData);
-  console.log('Pending applications raw response:', pendingApps);
 
   if (isLoading) {
     return (
@@ -55,12 +53,8 @@ const AdminDashboard = () => {
     );
   }
 
-  const stats = dashboardData?.data?.statistics || {};
-  const recentActivities = dashboardData?.data?.recentActivities || [];
-
-  // Debug information
-  console.log('Dashboard data received:', dashboardData);
-  console.log('Statistics:', stats);
+  const stats = dashboardData?.data?.data?.statistics || {};
+  const recentActivities = dashboardData?.data?.data?.recentActivities || [];
 
   const statCards = [
     {
@@ -120,12 +114,17 @@ const AdminDashboard = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2">Welcome back! Here's what's happening in your hostel.</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="text-gray-600 mt-2">Welcome back! Here's what's happening in your hostel.</p>
+            </div>
+
+          </div>
         </div>
 
         {/* Quick Actions Section */}
-        {(stats.pendingAdmissions > 0 || stats.pendingLeaveApplications > 0 || stats.activeComplaints > 0) && (
+        {(stats.pendingAdmissions > 0 || stats.pendingLeaves > 0 || stats.openComplaints > 0) && (
           <div className="mb-8">
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
               <div className="flex items-center justify-between">
@@ -136,29 +135,29 @@ const AdminDashboard = () => {
                 <div className="flex space-x-3">
                   {stats.pendingAdmissions > 0 && (
                     <button
-                      onClick={() => navigate('/admin/students')}
+                      onClick={() => navigate('/admin/applications')}
                       className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
                     >
                       <AlertCircle className="h-4 w-4" />
                       <span>Review {stats.pendingAdmissions} Applications</span>
                     </button>
                   )}
-                  {stats.pendingLeaveApplications > 0 && (
+                  {stats.pendingLeaves > 0 && (
                     <button
                       onClick={() => navigate('/admin/leave')}
                       className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
                     >
                       <Calendar className="h-4 w-4" />
-                      <span>Review {stats.pendingLeaveApplications} Leaves</span>
+                      <span>Review {stats.pendingLeaves} Leaves</span>
                     </button>
                   )}
-                  {stats.activeComplaints > 0 && (
+                  {stats.openComplaints > 0 && (
                     <button
                       onClick={() => navigate('/admin/complaints')}
                       className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
                     >
                       <MessageSquare className="h-4 w-4" />
-                      <span>Handle {stats.activeComplaints} Complaints</span>
+                      <span>Handle {stats.openComplaints} Complaints</span>
                     </button>
                   )}
                 </div>
@@ -232,7 +231,7 @@ const AdminDashboard = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Pending Approvals</h3>
               <div className="space-y-3">
                 <div 
-                  onClick={() => navigate('/admin/students')}
+                  onClick={() => navigate('/admin/applications')}
                   className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg cursor-pointer hover:bg-yellow-100 transition-colors group"
                 >
                   <div className="flex-1">
@@ -253,19 +252,19 @@ const AdminDashboard = () => {
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                   <div>
                     <p className="text-sm font-medium text-gray-900">Leave Requests</p>
-                    <p className="text-xs text-gray-600">{stats.pendingLeaveApplications || 0} requests</p>
+                    <p className="text-xs text-gray-600">{stats.pendingLeaves || 0} requests</p>
                   </div>
                   <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                    {stats.pendingLeaveApplications || 0}
+                    {stats.pendingLeaves || 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
                   <div>
                     <p className="text-sm font-medium text-gray-900">Complaints</p>
-                    <p className="text-xs text-gray-600">{stats.activeComplaints || 0} active</p>
+                    <p className="text-xs text-gray-600">{stats.openComplaints || 0} active</p>
                   </div>
                   <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
-                    {stats.activeComplaints || 0}
+                    {stats.openComplaints || 0}
                   </span>
                 </div>
               </div>
@@ -278,25 +277,25 @@ const AdminDashboard = () => {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Occupancy Rate</span>
                   <span className="text-sm font-medium text-gray-900">
-                    {stats.occupancyRate || '0%'}
+                    {stats.occupancyRate || 0}%
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Total Rooms</span>
                   <span className="text-sm font-medium text-gray-900">
-                    {stats.totalRooms || 200}
+                    {stats.totalRooms || 0}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Available Beds</span>
+                  <span className="text-sm text-gray-600">Occupied Rooms</span>
                   <span className="text-sm font-medium text-gray-900">
-                    {stats.availableBeds || 0}
+                    {stats.occupiedRooms || 0}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Monthly Revenue</span>
+                  <span className="text-sm text-gray-600">Available Rooms</span>
                   <span className="text-sm font-medium text-green-600">
-                    ₹{stats.monthlyRevenue || '0'}
+                    {(stats.totalRooms - stats.occupiedRooms) || 0}
                   </span>
                 </div>
               </div>
@@ -338,85 +337,6 @@ const AdminDashboard = () => {
                 <p className="text-xs text-green-600">Updated</p>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* PENDING APPLICATIONS SECTION */}
-        <div className="mt-8">
-          <div className="bg-white rounded-xl shadow-sm border p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Pending Applications ({pendingApps?.data?.pagination?.total || 0})
-              </h2>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => {
-                    adminService.createSimpleTestApplication()
-                      .then(() => window.location.reload())
-                      .catch(console.error);
-                  }}
-                  className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm"
-                >
-                  Create Test App
-                </button>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm"
-                >
-                  Refresh
-                </button>
-              </div>
-            </div>
-            
-            {appsLoading ? (
-              <div className="text-center py-4">Loading applications...</div>
-            ) : pendingApps?.data?.applications?.length > 0 ? (
-              <div className="space-y-4">
-                {pendingApps.data.applications.map((app, index) => (
-                  <div key={app._id || index} className="border-l-4 border-yellow-400 bg-yellow-50 p-4 rounded-r-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{app.name}</h3>
-                        <p className="text-sm text-gray-600">{app.email}</p>
-                        <p className="text-sm text-gray-600">{app.course} - Year {app.year}</p>
-                        <p className="text-xs text-gray-500">Applied: {new Date(app.createdAt).toLocaleDateString()}</p>
-                      </div>
-                      <div className="flex space-x-2">
-                        <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
-                          {app.status}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div className="text-center mt-4">
-                  <button
-                    onClick={() => navigate('/admin/students')}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-                  >
-                    View All Applications
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <p>No pending applications found</p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="mt-2 text-blue-500 hover:text-blue-700"
-                >
-                  Refresh
-                </button>
-              </div>
-            )}
-
-            {/* Raw Response Debug */}
-            <details className="mt-4">
-              <summary className="cursor-pointer text-sm text-gray-500">View Raw Response (Debug)</summary>
-              <pre className="mt-2 bg-gray-100 p-4 rounded text-xs overflow-auto">
-                {JSON.stringify(pendingApps, null, 2)}
-              </pre>
-            </details>
           </div>
         </div>
       </div>

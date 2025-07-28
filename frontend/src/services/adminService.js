@@ -52,6 +52,11 @@ const adminService = {
     return api.post('/admin/admissions/create-simple-test');
   },
 
+  createTestData: () => {
+    const api = createAuthApi();
+    return api.post('/admin/create-test-data');
+  },
+
   fixApplicationStatus: () => {
     const api = createAuthApi();
     return api.post('/admin/admissions/fix-status');

@@ -404,6 +404,183 @@ router.post('/admissions/create-simple-test', async (req, res) => {
         });
     }
 });
+
+// Create comprehensive test data for dashboard
+router.post('/create-test-data', async (req, res) => {
+    try {
+        console.log('Creating comprehensive test data...');
+        
+        const timestamp = Date.now();
+        const bcrypt = require('bcryptjs');
+        
+        // Clear existing test data to avoid conflicts
+        console.log('Clearing existing test data...');
+        await Application.deleteMany({ email: { $regex: /hostelmate\.local$/ } });
+        await User.deleteMany({ email: { $regex: /hostelmate\.local$/ } });
+        await Student.deleteMany({ studentId: { $regex: /^STU/ } });
+        await Room.deleteMany({ roomNumber: { $in: ['1', '2', '3', '4', '5'] } });
+        await LeaveApplication.deleteMany({});
+        await Complaint.deleteMany({});
+        await Attendance.deleteMany({});
+        console.log('Existing test data cleared');
+        
+        // Create test applications
+        const applications = [];
+        for (let i = 1; i <= 3; i++) {
+            const app = new Application({
+                name: `Test Student ${i}`,
+                email: `test.student.${i}.${timestamp}@hostelmate.local`,
+                phone: `987654321${i}`,
+                course: ['Computer Science', 'Mechanical Engineering', 'Civil Engineering'][i-1],
+                year: i,
+                status: 'PENDING',
+                rollNumber: `TEST${timestamp}${i}`,
+                caste: 'General',
+                religion: 'Hindu',
+                income: 50000,
+                parentName: `Test Parent ${i}`,
+                parentPhone: `987654320${i}`,
+                address: `${i}23 Test Street, Test City, Test State`,
+                emergencyContact: `987654322${i}`
+            });
+            const saved = await app.save();
+            applications.push(saved);
+        }
+        
+        // Create test users and students (must create User first, then Student)
+        const students = [];
+        for (let i = 1; i <= 2; i++) {
+            // First create User
+            const hashedPassword = await bcrypt.hash(`password${i}`, 10);
+            const user = new User({
+                name: `Accepted Student ${i}`,
+                email: `accepted.student.${i}.${timestamp}@hostelmate.local`,
+                phone: `887654321${i}`,
+                password: hashedPassword,
+                role: 'STUDENT',
+                isActive: true
+            });
+            const savedUser = await user.save();
+            
+            // Then create Student with all required fields
+            const student = new Student({
+                userId: savedUser._id, // Link to the user we just created
+                studentId: `STU${timestamp}${i}`,
+                caste: 'General',
+                religion: 'Hindu',
+                income: 50000,
+                parentName: `Parent ${i}`,
+                parentPhone: `8876543210`,
+                course: ['Computer Science', 'Electrical Engineering'][i-1],
+                year: i,
+                rollNumber: `STU${timestamp}${i}`,
+                admissionStatus: 'ACCEPTED',
+                roomNumber: i.toString(), // Valid room number format
+                bedLetter: 'A',
+                address: {
+                    street: `${i}45 Student Street`,
+                    city: 'Test City',
+                    state: 'Test State',
+                    pincode: '123456'
+                },
+                emergencyContact: `9876543210`
+            });
+            const savedStudent = await student.save();
+            students.push(savedStudent);
+        }
+        
+        // Create test rooms
+        const rooms = [];
+        for (let i = 1; i <= 5; i++) {
+            const room = new Room({
+                roomNumber: i.toString(),
+                floor: Math.ceil(i / 10),
+                wing: ['A', 'B', 'C', 'D'][Math.floor((i-1) / 2)],
+                rent: 5000
+            });
+            
+            // Set bed occupancy for first 2 rooms
+            if (i <= 2) {
+                room.beds.A.isOccupied = true;
+                room.beds.A.studentId = students[i-1]._id;
+            }
+            
+            const saved = await room.save();
+            rooms.push(saved);
+        }
+        
+        // Create test leave applications
+        const leaveApps = [];
+        for (let i = 1; i <= 2; i++) {
+            const leave = new LeaveApplication({
+                studentId: students[i-1]._id, // Use actual student ObjectId
+                reason: ['Family function', 'Medical checkup'][i-1],
+                fromDate: new Date(),
+                toDate: new Date(Date.now() + (i + 2) * 24 * 60 * 60 * 1000),
+                status: 'PENDING'
+            });
+            const saved = await leave.save();
+            leaveApps.push(saved);
+        }
+        
+        // Create test complaints
+        const complaints = [];
+        for (let i = 1; i <= 2; i++) {
+            const complaint = new Complaint({
+                studentId: students[i-1]._id, // Use actual student ObjectId
+                title: ['WiFi not working', 'AC repair needed'][i-1],
+                description: ['WiFi has been down for 2 days', 'AC is making loud noises'][i-1],
+                category: 'MAINTENANCE',
+                status: i === 1 ? 'OPEN' : 'IN_PROGRESS',
+                priority: i === 1 ? 'MEDIUM' : 'HIGH'
+            });
+            const saved = await complaint.save();
+            complaints.push(saved);
+        }
+        
+        // Create test attendance
+        const today = new Date().toISOString().split('T')[0];
+        const attendanceRecords = [];
+        for (let i = 1; i <= 2; i++) {
+            const attendance = new Attendance({
+                studentId: students[i-1]._id, // Use actual student ObjectId
+                date: today,
+                type: 'DINNER',
+                timestamp: new Date(),
+                qrCodeUsed: `QR${timestamp}${i}`, // Required field
+                location: 'MESS_HALL'
+            });
+            const saved = await attendance.save();
+            attendanceRecords.push(saved);
+        }
+        
+        const summary = {
+            applications: applications.length,
+            students: students.length,
+            rooms: rooms.length,
+            leaveApplications: leaveApps.length,
+            complaints: complaints.length,
+            attendanceRecords: attendanceRecords.length
+        };
+        
+        console.log('Test data created successfully:', summary);
+        
+        res.json({
+            success: true,
+            message: 'Comprehensive test data created successfully',
+            data: summary
+        });
+        
+    } catch (error) {
+        console.error('Error creating test data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error creating test data',
+            error: error.message
+        });
+    }
+});
+
 router.get('/students', async (req, res) => {
     try {
         console.log('Fetching all students with complete details...');
@@ -1615,16 +1792,12 @@ router.get('/dashboard', async (req, res) => {
         const today = moment().format('YYYY-MM-DD');
         const thisMonth = moment().format('YYYY-MM');
 
-        // Debug: Check database connection and models
-        console.log('Dashboard route called - checking database...');
-
         // Basic counts with error handling
         let totalStudents, pendingAdmissions, totalRooms, occupiedRooms;
         let todayAttendance, pendingLeaves, openComplaints;
 
         try {
             totalStudents = await Student.countDocuments({ admissionStatus: 'ACCEPTED' });
-            console.log('Total students:', totalStudents);
         } catch (error) {
             console.error('Error counting students:', error);
             totalStudents = 0;
@@ -1632,17 +1805,6 @@ router.get('/dashboard', async (req, res) => {
 
         try {
             pendingAdmissions = await Application.countDocuments({ status: 'PENDING' });
-            console.log('Pending admissions:', pendingAdmissions);
-            
-            // Debug: Get all applications to see what's in the database
-            const allApplications = await Application.find({}).limit(5);
-            console.log('Sample applications:', allApplications.map(app => ({
-                id: app._id,
-                name: app.name,
-                email: app.email,
-                status: app.status,
-                createdAt: app.createdAt
-            })));
         } catch (error) {
             console.error('Error counting applications:', error);
             pendingAdmissions = 0;
@@ -1651,7 +1813,6 @@ router.get('/dashboard', async (req, res) => {
         try {
             totalRooms = await Room.countDocuments();
             occupiedRooms = await Room.countDocuments({ 'beds.A.isOccupied': true });
-            console.log('Rooms - Total:', totalRooms, 'Occupied:', occupiedRooms);
         } catch (error) {
             console.error('Error counting rooms:', error);
             totalRooms = 0;
@@ -1747,8 +1908,6 @@ router.get('/dashboard', async (req, res) => {
                 complaints: recentComplaints
             }
         };
-
-        console.log('Dashboard response:', JSON.stringify(dashboardData, null, 2));
 
         res.json({
             success: true,
