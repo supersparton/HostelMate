@@ -1,0 +1,81 @@
+// Placeholder admin pages
+import React from 'react';
+import Navigation from '../../components/layout/Navigation.jsx';
+
+export const RoomManagement = () => (
+  <div className="min-h-screen bg-gray-50">
+    <Navigation />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900">Room Management</h1>
+      <p className="text-gray-600 mt-2">Manage hostel rooms and bed allocations</p>
+      <div className="bg-white rounded-lg shadow p-6 mt-6">
+        <p className="text-gray-500">Room management features coming soon...</p>
+      </div>
+    </div>
+  </div>
+);
+
+export const MenuManagement = () => (
+  <div className="min-h-screen bg-gray-50">
+    <Navigation />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
+      <p className="text-gray-600 mt-2">Manage daily meal menus and schedules</p>
+      <div className="bg-white rounded-lg shadow p-6 mt-6">
+        <p className="text-gray-500">Menu management features coming soon...</p>
+      </div>
+    </div>
+  </div>
+);
+
+export const AttendanceReport = () => (
+  <div className="min-h-screen bg-gray-50">
+    <Navigation />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900">Attendance Reports</h1>
+      <p className="text-gray-600 mt-2">View and manage student attendance records</p>
+      <div className="bg-white rounded-lg shadow p-6 mt-6">
+        <p className="text-gray-500">Attendance reporting features coming soon...</p>
+      </div>
+    </div>
+  </div>
+);
+
+export const LeaveManagement = () => (
+  <div className="min-h-screen bg-gray-50">
+    <Navigation />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900">Leave Management</h1>
+      <p className="text-gray-600 mt-2">Review and approve student leave applications</p>
+      <div className="bg-white rounded-lg shadow p-6 mt-6">
+        <p className="text-gray-500">Leave management features coming soon...</p>
+      </div>
+    </div>
+  </div>
+);
+
+export const ComplaintManagement = () => (
+  <div className="min-h-screen bg-gray-50">
+    <Navigation />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900">Complaint Management</h1>
+      <p className="text-gray-600 mt-2">Handle student complaints and issues</p>
+      <div className="bg-white rounded-lg shadow p-6 mt-6">
+        <p className="text-gray-500">Complaint management features coming soon...</p>
+      </div>
+    </div>
+  </div>
+);
+
+export const Reports = () => (
+  <div className="min-h-screen bg-gray-50">
+    <Navigation />
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900">Reports & Analytics</h1>
+      <p className="text-gray-600 mt-2">Generate various reports and analytics</p>
+      <div className="bg-white rounded-lg shadow p-6 mt-6">
+        <p className="text-gray-500">Reporting features coming soon...</p>
+      </div>
+    </div>
+  </div>
+);
