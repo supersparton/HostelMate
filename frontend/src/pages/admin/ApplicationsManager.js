@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { toast } from 'react-hot-toast';
+import Navigation from '../../components/layout/Navigation.jsx';
 import studentApplicationService from '../../services/studentApplicationService';
 import LoadingSpinner from '../../components/common/LoadingSpinner.jsx';
 import ApprovalModal from './ApprovalModal';
@@ -105,17 +106,11 @@ const ApplicationsManager = () => {
 
   const isLoading = activeTab === 'pending' ? loadingPending : loadingAll;
 
-  console.log('=== ApplicationsManager Debug ===');
-  console.log('Active tab:', activeTab);
-  console.log('Pending apps data:', pendingApps?.data);
-  console.log('Current apps count:', currentApps.length);
-  console.log('Dashboard stats:', dashboardStats?.data);
-  console.log('Loading state:', isLoading);
-  console.log('Pending error:', pendingError);
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      
+      <div className="px-6 py-8 max-w-none">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Student Applications Manager</h1>
@@ -157,31 +152,11 @@ const ApplicationsManager = () => {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="flex space-x-4">
             <button
-              onClick={() => {
-                studentApplicationService.createSampleRooms()
-                  .then(() => {
-                    toast.success('Sample rooms created!');
-                    queryClient.invalidateQueries('availableBeds');
-                  })
-                  .catch(console.error);
-              }}
-              className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg transition-colors"
-            >
-              Create Sample Rooms
-            </button>
-            <button
               onClick={() => createTestMutation.mutate()}
               disabled={createTestMutation.isLoading}
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50"
             >
               {createTestMutation.isLoading ? 'Creating...' : 'Create Test Application'}
-            </button>
-            <button
-              onClick={() => forcePendingMutation.mutate()}
-              disabled={forcePendingMutation.isLoading}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50"
-            >
-              {forcePendingMutation.isLoading ? 'Updating...' : 'Force All to PENDING'}
             </button>
           </div>
         </div>
@@ -287,29 +262,6 @@ const ApplicationsManager = () => {
             )}
           </div>
         </div>
-
-        {/* Debug Info */}
-        <details className="bg-white rounded-lg p-6 shadow-sm border">
-          <summary className="cursor-pointer font-medium text-gray-700">Debug Information</summary>
-          <div className="mt-4 space-y-4">
-            <div>
-              <h4 className="font-medium text-gray-900">API Response (Pending):</h4>
-              <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto max-h-40">
-                {JSON.stringify(pendingApps?.data, null, 2)}
-              </pre>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-900">Current Apps Count:</h4>
-              <p className="text-gray-600">{currentApps.length}</p>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-900">Loading States:</h4>
-              <p className="text-gray-600">
-                Pending: {loadingPending.toString()}, All: {loadingAll.toString()}
-              </p>
-            </div>
-          </div>
-        </details>
       </div>
 
       {/* Approval Modal */}

@@ -27,7 +27,6 @@ const Navigation = () => {
     { path: '/admin/dashboard', label: 'Dashboard', icon: Home },
     { path: '/admin/students', label: 'Students', icon: Users },
     { path: '/admin/applications', label: 'Applications', icon: ClipboardList },
-    { path: '/admin/rooms', label: 'Rooms', icon: Building },
     { path: '/admin/menu', label: 'Menu', icon: BookOpen },
     { path: '/admin/attendance', label: 'Attendance', icon: ClipboardList },
     { path: '/admin/leave', label: 'Leave', icon: Calendar },
@@ -71,7 +70,7 @@ const Navigation = () => {
 
   return (
     <nav className="bg-white shadow-lg border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo and brand */}
           <div className="flex items-center">
