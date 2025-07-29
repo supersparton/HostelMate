@@ -32,6 +32,7 @@ const Navigation = () => {
     { path: '/admin/attendance', label: 'Attendance', icon: ClipboardList },
     { path: '/admin/leave', label: 'Leave', icon: Calendar },
     { path: '/admin/complaints', label: 'Complaints', icon: MessageSquare },
+    { path: '/admin/community', label: 'Community', icon: Users },
     { path: '/admin/reports', label: 'Reports', icon: BarChart3 },
   ];
 

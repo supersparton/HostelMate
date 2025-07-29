@@ -140,22 +140,22 @@ const studentService = {
   // Community posts
   getCommunityPosts: () => {
     const api = createAuthApi();
-    return api.get('/student/community-posts');
+    return api.get('/student/community');
   },
 
-  createPost: (postData) => {
+  createCommunityPost: (postData) => {
     const api = createAuthApi();
-    return api.post('/student/community-posts', postData);
+    return api.post('/student/community', postData);
   },
 
-  likePost: (postId) => {
+  voteCommunityPost: (postId, voteType) => {
     const api = createAuthApi();
-    return api.post(`/student/community-posts/${postId}/like`);
+    return api.post(`/student/community/${postId}/vote`, { voteType });
   },
 
-  addComment: (postId, comment) => {
+  commentCommunityPost: (postId, comment) => {
     const api = createAuthApi();
-    return api.post(`/student/community-posts/${postId}/comment`, { comment });
+    return api.post(`/student/community/${postId}/comment`, { comment });
   },
 
   // Room information

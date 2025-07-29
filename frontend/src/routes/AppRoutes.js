@@ -34,12 +34,12 @@ import {
   MealBooking, 
   AttendanceView, 
   LeaveApplicationPage, 
-  ComplaintSubmission, 
-  CommunityForum 
+  ComplaintSubmission
 } from '../pages/student';
 
 // Shared Components
 import LoadingSpinner from '../components/common/LoadingSpinner.jsx';
+import CommunityForum from '../components/community/CommunityForum';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -186,6 +186,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requiredRole="ADMIN">
             <Reports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/community"
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <CommunityForum />
           </ProtectedRoute>
         }
       />

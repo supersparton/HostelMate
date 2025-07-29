@@ -4,6 +4,7 @@ import Navigation from '../../components/layout/Navigation.jsx';
 import LeaveApplication from './LeaveApplication';
 import MenuView from './MenuView';
 import ComplaintManagement from './ComplaintManagement';
+import CommunityForumComponent from '../../components/community/CommunityForum';
 
 export const StudentProfile = () => (
   <div className="min-h-screen bg-gray-50">
@@ -72,14 +73,5 @@ export const ComplaintSubmission = () => (
 );
 
 export const CommunityForum = () => (
-  <div className="min-h-screen bg-gray-50">
-    <Navigation />
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900">Community Forum</h1>
-      <p className="text-gray-600 mt-2">Connect with your hostel mates</p>
-      <div className="bg-white rounded-lg shadow p-6 mt-6">
-        <p className="text-gray-500">Community forum features coming soon...</p>
-      </div>
-    </div>
-  </div>
+  <CommunityForumComponent />
 );

@@ -2584,4 +2584,253 @@ router.post('/leave-qr/verify', async (req, res) => {
     }
 });
 
+// ======================
+// COMMUNITY MANAGEMENT
+// ======================
+
+// Get all community posts (admin can see all)
+router.get('/community', async (req, res) => {
+    try {
+        const { 
+            page = 1, 
+            limit = 10, 
+            type, 
+            category, 
+            status,
+            search = '' 
+        } = req.query;
+        
+        let filter = {};
+        if (type) filter.type = type;
+        if (category) filter.category = category;
+        if (status) filter.status = status;
+        
+        if (search) {
+            filter.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const posts = await CommunityPost.find(filter)
+            .populate({
+                path: 'studentId',
+                populate: {
+                    path: 'userId',
+                    select: 'name email'
+                }
+            })
+            .populate('votes.voters.studentId', 'userId')
+            .populate('comments.studentId', 'userId')
+            .sort({ createdAt: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit);
+
+        const total = await CommunityPost.countDocuments(filter);
+
+        res.json({
+            success: true,
+            data: {
+                posts,
+                pagination: {
+                    current: page,
+                    pages: Math.ceil(total / limit),
+                    total
+                }
+            }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching community posts',
+            error: error.message
+        });
+    }
+});
+
+// Create community post (admin)
+router.post('/community', async (req, res) => {
+    try {
+        const { title, description, type, category, isAnonymous = false } = req.body;
+
+        // For admin posts, we need to create a special handling since admin is not a student
+        const post = new CommunityPost({
+            studentId: null, // Admin posts don't have studentId
+            title,
+            description,
+            type,
+            category,
+            isAnonymous,
+            adminPost: {
+                adminId: req.user._id,
+                adminName: req.user.name
+            }
+        });
+
+        await post.save();
+
+        res.json({
+            success: true,
+            message: 'Community post created successfully',
+            data: { post }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error creating community post',
+            error: error.message
+        });
+    }
+});
+
+// Vote on community post (admin)
+router.post('/community/:postId/vote', async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { voteType } = req.body; // 'UP' or 'DOWN'
+
+        if (!['UP', 'DOWN'].includes(voteType)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid vote type. Must be UP or DOWN'
+            });
+        }
+
+        const post = await CommunityPost.findById(postId);
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        // Check if admin already voted
+        const existingVote = post.votes.voters.find(vote => 
+            vote.adminId && vote.adminId.toString() === req.user._id.toString()
+        );
+
+        if (existingVote) {
+            // Update existing vote
+            if (existingVote.voteType === voteType) {
+                // Remove vote if same type
+                post.votes.voters = post.votes.voters.filter(vote => 
+                    !(vote.adminId && vote.adminId.toString() === req.user._id.toString())
+                );
+                if (voteType === 'UP') post.votes.upvotes--;
+                else post.votes.downvotes--;
+            } else {
+                // Change vote type
+                existingVote.voteType = voteType;
+                if (voteType === 'UP') {
+                    post.votes.upvotes++;
+                    post.votes.downvotes--;
+                } else {
+                    post.votes.downvotes++;
+                    post.votes.upvotes--;
+                }
+            }
+        } else {
+            // Add new vote
+            post.votes.voters.push({
+                adminId: req.user._id,
+                voteType,
+                votedAt: new Date()
+            });
+            if (voteType === 'UP') post.votes.upvotes++;
+            else post.votes.downvotes++;
+        }
+
+        await post.save();
+
+        res.json({
+            success: true,
+            message: 'Vote recorded successfully',
+            data: { post }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error recording vote',
+            error: error.message
+        });
+    }
+});
+
+// Add comment to community post (admin)
+router.post('/community/:postId/comment', async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { comment } = req.body;
+
+        if (!comment || comment.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Comment cannot be empty'
+            });
+        }
+
+        const post = await CommunityPost.findById(postId);
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        post.comments.push({
+            adminId: req.user._id,
+            adminName: req.user.name,
+            comment: comment.trim(),
+            commentedAt: new Date()
+        });
+
+        await post.save();
+
+        res.json({
+            success: true,
+            message: 'Comment added successfully',
+            data: { post }
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error adding comment',
+            error: error.message
+        });
+    }
+});
+
+// Delete community post (admin only)
+router.delete('/community/:postId', async (req, res) => {
+    try {
+        const { postId } = req.params;
+
+        const post = await CommunityPost.findById(postId);
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                message: 'Post not found'
+            });
+        }
+
+        await CommunityPost.findByIdAndDelete(postId);
+
+        res.json({
+            success: true,
+            message: 'Post deleted successfully'
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting post',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

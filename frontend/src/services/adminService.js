@@ -229,12 +229,27 @@ const adminService = {
   // Community posts
   getCommunityPosts: () => {
     const api = createAuthApi();
-    return api.get('/admin/community-posts');
+    return api.get('/admin/community');
+  },
+
+  createCommunityPost: (postData) => {
+    const api = createAuthApi();
+    return api.post('/admin/community', postData);
+  },
+
+  voteCommunityPost: (postId, voteType) => {
+    const api = createAuthApi();
+    return api.post(`/admin/community/${postId}/vote`, { voteType });
+  },
+
+  commentCommunityPost: (postId, comment) => {
+    const api = createAuthApi();
+    return api.post(`/admin/community/${postId}/comment`, { comment });
   },
 
   deletePost: (postId) => {
     const api = createAuthApi();
-    return api.delete(`/admin/community-posts/${postId}`);
+    return api.delete(`/admin/community/${postId}`);
   },
 
   // Reports

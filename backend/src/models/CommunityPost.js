@@ -4,7 +4,11 @@ const communityPostSchema = new mongoose.Schema({
     studentId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Student',
-        required: true
+        required: function() { return !this.adminPost; }
+    },
+    adminPost: {
+        adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        adminName: String
     },
     title: {
         type: String,
@@ -39,12 +43,15 @@ const communityPostSchema = new mongoose.Schema({
         },
         voters: [{
             studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
+            adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
             voteType: { type: String, enum: ['UP', 'DOWN'] },
             votedAt: { type: Date, default: Date.now }
         }]
     },
     comments: [{
         studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
+        adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        adminName: String,
         comment: { type: String, maxlength: 500 },
         commentedAt: { type: Date, default: Date.now }
     }],
