@@ -214,12 +214,16 @@ const adminService = {
   // Complaints management
   getComplaints: (status = 'all') => {
     const api = createAuthApi();
-    return api.get('/admin/complaints', { params: { status } });
+    const params = {};
+    if (status !== 'all') {
+      params.status = status;
+    }
+    return api.get('/admin/complaints', { params });
   },
 
   updateComplaintStatus: (complaintId, status, response) => {
     const api = createAuthApi();
-    return api.put(`/admin/complaints/${complaintId}`, { status, response });
+    return api.patch(`/admin/complaints/${complaintId}`, { status, adminResponse: response });
   },
 
   // Community posts

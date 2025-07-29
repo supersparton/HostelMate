@@ -3,6 +3,7 @@ import React from 'react';
 import Navigation from '../../components/layout/Navigation.jsx';
 import LeaveManagement from './LeaveManagement';
 import MenuManagement from './MenuManagement';
+import AdminComplaintManagement from './AdminComplaintManagement';
 
 export const RoomManagement = () => (
   <div className="min-h-screen bg-gray-50">
@@ -52,11 +53,7 @@ export const ComplaintManagement = () => (
   <div className="min-h-screen bg-gray-50">
     <Navigation />
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900">Complaint Management</h1>
-      <p className="text-gray-600 mt-2">Handle student complaints and issues</p>
-      <div className="bg-white rounded-lg shadow p-6 mt-6">
-        <p className="text-gray-500">Complaint management features coming soon...</p>
-      </div>
+      <AdminComplaintManagement />
     </div>
   </div>
 );

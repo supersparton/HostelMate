@@ -718,7 +718,7 @@ router.get('/complaints', async (req, res) => {
 // Submit complaint
 router.post('/complaints', validateComplaint, handleValidationErrors, async (req, res) => {
     try {
-        const { title, description, category, priority = 'MEDIUM' } = req.body;
+        const { title, description, category, priority = 'MEDIUM', roomNumber } = req.body;
 
         const complaint = new Complaint({
             studentId: req.student._id,
@@ -726,7 +726,7 @@ router.post('/complaints', validateComplaint, handleValidationErrors, async (req
             description,
             category,
             priority,
-            roomNumber: req.student.roomNumber
+            roomNumber: roomNumber || req.student.roomNumber
         });
 
         await complaint.save();
