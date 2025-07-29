@@ -147,7 +147,56 @@ const adminService = {
   },
 
   // Leave applications
-  getLeaveApplications: (status = 'all') => {
+  // Leave management
+  getLeaveApplications: (filters = {}) => {
+    const api = createAuthApi();
+    const params = {
+      // Remove pagination completely
+      // page: filters.page || 1,
+      // limit: filters.limit || 20,
+      status: filters.status !== 'ALL' ? filters.status : undefined,
+      leaveType: filters.leaveType !== 'ALL' ? filters.leaveType : undefined,
+      search: filters.search || undefined,
+      sortBy: filters.sortBy || 'createdAt',
+      sortOrder: filters.sortOrder || 'desc'
+    };
+    
+    // Remove undefined values
+    Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+    
+    return api.get('/admin/leave-applications', { params });
+  },
+
+  getLeaveApplication: (leaveId) => {
+    const api = createAuthApi();
+    return api.get(`/admin/leave-applications/${leaveId}`);
+  },
+
+  getLeaveStatistics: () => {
+    const api = createAuthApi();
+    return api.get('/admin/leave-statistics');
+  },
+
+  approveLeaveApplication: (leaveId, adminComments = '') => {
+    const api = createAuthApi();
+    return api.patch(`/admin/leave-applications/${leaveId}/approve`, { adminComments });
+  },
+
+  rejectLeaveApplication: (leaveId, adminComments = '', rejectionReason = '') => {
+    const api = createAuthApi();
+    return api.patch(`/admin/leave-applications/${leaveId}/reject`, { 
+      adminComments, 
+      rejectionReason 
+    });
+  },
+
+  verifyLeaveQR: (token) => {
+    const api = createAuthApi();
+    return api.post('/admin/leave-qr/verify', { token });
+  },
+
+  // Legacy leave methods (kept for backward compatibility)
+  getLeaveApplications_old: (status = 'all') => {
     const api = createAuthApi();
     return api.get('/admin/leave-applications', { params: { status } });
   },
@@ -201,4 +250,5 @@ const adminService = {
   },
 };
 
+export { adminService };
 export default adminService;

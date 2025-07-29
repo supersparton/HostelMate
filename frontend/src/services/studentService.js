@@ -70,12 +70,52 @@ const studentService = {
     return api.get('/student/attendance', { params });
   },
 
-  // Leave applications
-  getLeaveApplications: () => {
+  // Leave applications (updated API)
+  getLeaveApplications: (filters = {}) => {
     const api = createAuthApi();
-    return api.get('/student/leave-applications');
+    const params = {
+      // Remove pagination completely
+      // page: filters.page || 1,
+      // limit: filters.limit || 10,
+      status: filters.status !== 'ALL' ? filters.status : undefined,
+      sortBy: filters.sortBy || 'createdAt',
+      sortOrder: filters.sortOrder || 'desc'
+    };
+    
+    // Remove undefined values
+    Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
+    
+    return api.get('/student/leave-applications', { params });
   },
 
+  getLeaveApplication: (leaveId) => {
+    const api = createAuthApi();
+    return api.get(`/student/leave-applications/${leaveId}`);
+  },
+
+  submitLeaveApplication: (leaveData) => {
+    const api = createAuthApi();
+    return api.post('/student/leave-applications', leaveData);
+  },
+
+  cancelLeaveApplication: (leaveId) => {
+    const api = createAuthApi();
+    return api.delete(`/student/leave-applications/${leaveId}`);
+  },
+
+  getLeaveQRCodes: (leaveId) => {
+    const api = createAuthApi();
+    return api.get(`/student/leave-applications/${leaveId}/qr-codes`);
+  },
+
+  getLeaveCalendar: (year, month) => {
+    const api = createAuthApi();
+    const params = { year };
+    if (month) params.month = month;
+    return api.get('/student/leave-calendar', { params });
+  },
+
+  // Legacy leave methods (kept for backward compatibility)
   applyLeave: (leaveData) => {
     const api = createAuthApi();
     return api.post('/student/leave-applications', leaveData);
@@ -158,4 +198,5 @@ const studentService = {
   },
 };
 
+export { studentService };
 export default studentService;

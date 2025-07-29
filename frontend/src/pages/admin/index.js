@@ -1,6 +1,7 @@
-// Placeholder admin pages
+// Admin pages
 import React from 'react';
 import Navigation from '../../components/layout/Navigation.jsx';
+import LeaveManagement from './LeaveManagement';
 
 export const RoomManagement = () => (
   <div className="min-h-screen bg-gray-50">
@@ -41,15 +42,11 @@ export const AttendanceReport = () => (
   </div>
 );
 
-export const LeaveManagement = () => (
+export const LeaveManagementPage = () => (
   <div className="min-h-screen bg-gray-50">
     <Navigation />
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900">Leave Management</h1>
-      <p className="text-gray-600 mt-2">Review and approve student leave applications</p>
-      <div className="bg-white rounded-lg shadow p-6 mt-6">
-        <p className="text-gray-500">Leave management features coming soon...</p>
-      </div>
+      <LeaveManagement />
     </div>
   </div>
 );

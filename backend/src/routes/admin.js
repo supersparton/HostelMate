@@ -1405,10 +1405,37 @@ router.post('/menu', async (req, res) => {
 // LEAVE MANAGEMENT
 // ======================
 
+// DEBUG: Get total count of all leave applications
+router.get('/leave-debug', async (req, res) => {
+    try {
+        const totalCount = await LeaveApplication.countDocuments({});
+        const allLeaves = await LeaveApplication.find({}).limit(5);
+        
+        console.log('DEBUG: Total leaves in database:', totalCount);
+        console.log('DEBUG: Sample leaves:', allLeaves.map(l => ({
+            id: l._id,
+            studentId: l.studentId,
+            status: l.status,
+            fromDate: l.fromDate,
+            createdAt: l.createdAt
+        })));
+        
+        res.json({
+            success: true,
+            totalCount,
+            sampleLeaves: allLeaves
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get all leave applications
 router.get('/leaves', async (req, res) => {
     try {
         const { page = 1, limit = 10, status, studentId } = req.query;
+        
+        console.log('OLD ADMIN LEAVES ROUTE called with:', { page, limit, status, studentId });
         
         let filter = {};
         if (status) filter.status = status;
@@ -1986,6 +2013,462 @@ router.post('/admissions/force-all-pending', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error forcing all applications to PENDING',
+            error: error.message
+        });
+    }
+});
+
+// ======================
+// LEAVE MANAGEMENT
+// ======================
+
+// Get all leave applications with filters
+router.get('/leave-applications', async (req, res) => {
+    try {
+        const { 
+            page = 1, 
+            limit = 50, 
+            status = '', 
+            leaveType = '', 
+            search = '',
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = req.query;
+        
+        console.log('GET /leave-applications called with:', { page, limit, status, leaveType, search });
+        
+        const filter = {};
+        
+        // Temporarily remove all filters to see all data
+        // Status filter
+        // if (status && status !== 'ALL') {
+        //     filter.status = status;
+        // }
+        
+        // Leave type filter
+        // if (leaveType && leaveType !== 'ALL') {
+        //     filter.leaveType = leaveType;
+        // }
+        
+        // Search filter
+        // if (search) {
+        //     filter.$or = [
+        //         { reason: { $regex: search, $options: 'i' } },
+        //         { adminComments: { $regex: search, $options: 'i' } }
+        //     ];
+        // }
+
+        const sortOptions = {};
+        sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+        console.log('About to query leave applications with filter:', filter);
+        console.log('Sort options:', sortOptions);
+
+        // Remove pagination temporarily to see all data
+        const leaveApplications = await LeaveApplication.find(filter)
+            .populate({
+                path: 'studentId',
+                select: 'name email studentId roomNumber',
+                populate: {
+                    path: 'userId',
+                    select: 'name email'
+                }
+            })
+            .populate('userId', 'name email')
+            .sort(sortOptions);
+            // .limit(limit * 1)
+            // .skip((page - 1) * limit);
+
+        console.log('Raw query result:', leaveApplications.length);
+
+        const total = await LeaveApplication.countDocuments(filter);
+        
+        console.log('Found leave applications:', {
+            count: leaveApplications.length,
+            total: total,
+            filter: filter,
+            sampleApps: leaveApplications.slice(0, 3).map(app => ({
+                id: app._id,
+                status: app.status,
+                studentName: app.studentId?.name || app.studentId?.userId?.name || 'NAME_NOT_FOUND',
+                studentEmail: app.studentId?.email || app.studentId?.userId?.email || 'EMAIL_NOT_FOUND',
+                studentRoom: app.studentId?.roomNumber || 'ROOM_NOT_FOUND',
+                fromDate: app.fromDate,
+                toDate: app.toDate,
+                reason: app.reason?.substring(0, 30) || 'NO_REASON'
+            }))
+        });
+        
+        // Get statistics for dashboard
+        const stats = await LeaveApplication.aggregate([
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+        
+        const statusCounts = {
+            PENDING: 0,
+            APPROVED: 0,
+            REJECTED: 0
+        };
+        
+        stats.forEach(stat => {
+            statusCounts[stat._id] = stat.count;
+        });
+
+        res.json({
+            success: true,
+            data: {
+                leaveApplications: leaveApplications.map(app => ({
+                    ...app.toObject(),
+                    studentName: app.studentId?.userId?.name || 'Unknown Student',
+                    studentEmail: app.studentId?.userId?.email || app.studentId?.email || 'No Email',
+                    studentRoom: app.studentId?.roomNumber || 'No Room'
+                })),
+                totalCount: total,
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(total / limit),
+                hasMore: page * limit < total,
+                statistics: statusCounts
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching leave applications:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching leave applications',
+            error: error.message
+        });
+    }
+});
+
+// Get leave application by ID with full details
+router.get('/leave-applications/:id', validateObjectId('id'), async (req, res) => {
+    try {
+        const leaveApplication = await LeaveApplication.findById(req.params.id)
+            .populate('studentId', 'name email studentId roomNumber course year')
+            .populate('userId', 'email')
+            .populate('approvedBy', 'name email');
+
+        if (!leaveApplication) {
+            return res.status(404).json({
+                success: false,
+                message: 'Leave application not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: leaveApplication
+        });
+    } catch (error) {
+        console.error('Error fetching leave application:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching leave application',
+            error: error.message
+        });
+    }
+});
+
+// Approve leave application with QR code generation
+router.patch('/leave-applications/:id/approve', validateObjectId('id'), async (req, res) => {
+    try {
+        const { adminComments } = req.body;
+        const leaveApplicationId = req.params.id;
+        
+        console.log('Approving leave application:', leaveApplicationId);
+
+        // Find the leave application
+        const leaveApplication = await LeaveApplication.findById(leaveApplicationId)
+            .populate('studentId', 'name email studentId roomNumber')
+            .populate('userId', 'email');
+
+        if (!leaveApplication) {
+            return res.status(404).json({
+                success: false,
+                message: 'Leave application not found'
+            });
+        }
+
+        if (leaveApplication.status !== 'PENDING') {
+            return res.status(400).json({
+                success: false,
+                message: 'Leave application is not in pending status'
+            });
+        }
+
+        // Import QR service
+        const QRService = require('../services/qrService');
+
+        // Generate QR codes for entry and exit
+        const qrCodes = await QRService.generateLeaveQRCodes(leaveApplication, leaveApplication.studentId);
+
+        // Update leave application with approval and QR codes
+        leaveApplication.status = 'APPROVED';
+        leaveApplication.approvedBy = req.user.id;
+        leaveApplication.approvedAt = new Date();
+        leaveApplication.adminComments = adminComments || '';
+        
+        // Store QR codes in the application (updated to match model structure)
+        leaveApplication.entryQRCode = {
+            code: qrCodes.entryQR.code,
+            used: false,
+            usedAt: null
+        };
+        
+        leaveApplication.exitQRCode = {
+            code: qrCodes.exitQR.code,
+            used: false,
+            usedAt: null
+        };
+
+        await leaveApplication.save();
+
+        // Send approval email with QR codes
+        try {
+            await emailService.sendLeaveApprovalEmail(
+                leaveApplication.userId.email,
+                {
+                    name: leaveApplication.studentId.name,
+                    studentId: leaveApplication.studentId.studentId,
+                    roomNumber: leaveApplication.studentId.roomNumber
+                },
+                {
+                    leaveType: leaveApplication.leaveType,
+                    fromDate: leaveApplication.fromDate,
+                    toDate: leaveApplication.toDate,
+                    totalDays: leaveApplication.totalDays,
+                    reason: leaveApplication.reason,
+                    adminComments: leaveApplication.adminComments
+                },
+                qrCodes
+            );
+            console.log('✅ Leave approval email sent successfully');
+        } catch (emailError) {
+            console.error('❌ Error sending leave approval email:', emailError);
+            // Don't fail the approval if email fails
+        }
+
+        res.json({
+            success: true,
+            message: 'Leave application approved successfully with QR codes generated',
+            data: {
+                leaveApplication: await LeaveApplication.findById(leaveApplicationId)
+                    .populate('studentId', 'name email studentId roomNumber')
+                    .populate('userId', 'email')
+                    .populate('approvedBy', 'name email'),
+                qrCodes: {
+                    entryQR: {
+                        purpose: qrCodes.entryQR.purpose,
+                        validFrom: qrCodes.entryQR.data.validFrom,
+                        validUntil: qrCodes.entryQR.data.validUntil
+                    },
+                    exitQR: {
+                        purpose: qrCodes.exitQR.purpose,
+                        validFrom: qrCodes.exitQR.data.validFrom,
+                        validUntil: qrCodes.exitQR.data.validUntil
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error approving leave application:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error approving leave application',
+            error: error.message
+        });
+    }
+});
+
+// Reject leave application
+router.patch('/leave-applications/:id/reject', validateObjectId('id'), async (req, res) => {
+    try {
+        const { adminComments, rejectionReason } = req.body;
+        const leaveApplicationId = req.params.id;
+        
+        console.log('Rejecting leave application:', leaveApplicationId);
+
+        // Find the leave application
+        const leaveApplication = await LeaveApplication.findById(leaveApplicationId)
+            .populate('studentId', 'name email studentId roomNumber')
+            .populate('userId', 'email');
+
+        if (!leaveApplication) {
+            return res.status(404).json({
+                success: false,
+                message: 'Leave application not found'
+            });
+        }
+
+        if (leaveApplication.status !== 'PENDING') {
+            return res.status(400).json({
+                success: false,
+                message: 'Leave application is not in pending status'
+            });
+        }
+
+        // Update leave application with rejection
+        leaveApplication.status = 'REJECTED';
+        leaveApplication.approvedBy = req.user.id;
+        leaveApplication.approvedAt = new Date();
+        leaveApplication.adminComments = adminComments || rejectionReason || 'Application rejected by administrator';
+
+        await leaveApplication.save();
+
+        // Send rejection email
+        try {
+            await emailService.sendLeaveRejectionEmail(
+                leaveApplication.userId.email,
+                {
+                    name: leaveApplication.studentId.name,
+                    studentId: leaveApplication.studentId.studentId,
+                    roomNumber: leaveApplication.studentId.roomNumber
+                },
+                {
+                    leaveType: leaveApplication.leaveType,
+                    fromDate: leaveApplication.fromDate,
+                    toDate: leaveApplication.toDate,
+                    totalDays: leaveApplication.totalDays,
+                    reason: leaveApplication.reason,
+                    adminComments: leaveApplication.adminComments
+                },
+                rejectionReason || adminComments
+            );
+            console.log('✅ Leave rejection email sent successfully');
+        } catch (emailError) {
+            console.error('❌ Error sending leave rejection email:', emailError);
+            // Don't fail the rejection if email fails
+        }
+
+        res.json({
+            success: true,
+            message: 'Leave application rejected successfully',
+            data: await LeaveApplication.findById(leaveApplicationId)
+                .populate('studentId', 'name email studentId roomNumber')
+                .populate('userId', 'email')
+                .populate('approvedBy', 'name email')
+        });
+    } catch (error) {
+        console.error('Error rejecting leave application:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error rejecting leave application',
+            error: error.message
+        });
+    }
+});
+
+// Get leave statistics for dashboard
+router.get('/leave-statistics', async (req, res) => {
+    try {
+        const currentDate = new Date();
+        const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
+
+        const [
+            totalLeaves,
+            pendingLeaves,
+            approvedLeaves,
+            rejectedLeaves,
+            monthlyLeaves,
+            yearlyLeaves,
+            leavesByType
+        ] = await Promise.all([
+            LeaveApplication.countDocuments(),
+            LeaveApplication.countDocuments({ status: 'PENDING' }),
+            LeaveApplication.countDocuments({ status: 'APPROVED' }),
+            LeaveApplication.countDocuments({ status: 'REJECTED' }),
+            LeaveApplication.countDocuments({ createdAt: { $gte: startOfMonth } }),
+            LeaveApplication.countDocuments({ createdAt: { $gte: startOfYear } }),
+            LeaveApplication.aggregate([
+                {
+                    $group: {
+                        _id: '$leaveType',
+                        count: { $sum: 1 }
+                    }
+                }
+            ])
+        ]);
+
+        const leaveTypeStats = {};
+        leavesByType.forEach(type => {
+            leaveTypeStats[type._id] = type.count;
+        });
+
+        res.json({
+            success: true,
+            data: {
+                total: totalLeaves,
+                pending: pendingLeaves,
+                approved: approvedLeaves,
+                rejected: rejectedLeaves,
+                thisMonth: monthlyLeaves,
+                thisYear: yearlyLeaves,
+                byType: leaveTypeStats
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching leave statistics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching leave statistics',
+            error: error.message
+        });
+    }
+});
+
+// Verify and mark QR code as used (for gate security)
+router.post('/leave-qr/verify', async (req, res) => {
+    try {
+        const { token } = req.body;
+        
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: 'QR code token is required'
+            });
+        }
+
+        const QRService = require('../services/qrService');
+        
+        // Verify the QR code
+        const verification = await QRService.verifyLeaveQR(token, LeaveApplication);
+        
+        if (!verification.valid) {
+            return res.status(400).json({
+                success: false,
+                message: verification.error
+            });
+        }
+
+        // Mark QR code as used
+        const updatedLeave = await QRService.markLeaveQRAsUsed(
+            verification.leaveApplication._id,
+            verification.qrType,
+            LeaveApplication
+        );
+
+        res.json({
+            success: true,
+            message: `QR code verified and marked as used for ${verification.action}`,
+            data: {
+                student: verification.leaveApplication.studentId,
+                leaveType: verification.leaveApplication.leaveType,
+                action: verification.action,
+                qrType: verification.qrType,
+                usedAt: new Date()
+            }
+        });
+    } catch (error) {
+        console.error('Error verifying leave QR code:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error verifying QR code',
             error: error.message
         });
     }

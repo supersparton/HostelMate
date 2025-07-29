@@ -126,6 +126,194 @@ class EmailService {
         }
     }
 
+    // Send leave application approval email with QR codes
+    async sendLeaveApprovalEmail(userEmail, studentData, leaveData, qrCodes) {
+        try {
+            const formatDate = (date) => {
+                return new Date(date).toLocaleDateString('en-IN', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            };
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: userEmail,
+                subject: '✅ Leave Application Approved - QR Codes Attached',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px;">🎉 Leave Application Approved!</h1>
+                            <p style="margin: 10px 0 0 0; font-size: 18px;">Your leave request has been successfully approved</p>
+                        </div>
+                        
+                        <div style="padding: 30px; background-color: #f9f9f9;">
+                            <h2 style="color: #333; margin-top: 0;">Dear ${studentData.name},</h2>
+                            
+                            <p style="font-size: 16px; line-height: 1.6; color: #555;">
+                                Congratulations! Your leave application has been <strong style="color: #4CAF50;">APPROVED</strong> by the administration.
+                            </p>
+                            
+                            <div style="background-color: white; padding: 20px; border-left: 4px solid #4CAF50; margin: 25px 0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h3 style="color: #4CAF50; margin-top: 0;">📋 Leave Details</h3>
+                                <div style="display: grid; gap: 8px;">
+                                    <p style="margin: 0;"><strong>Leave Type:</strong> ${leaveData.leaveType}</p>
+                                    <p style="margin: 0;"><strong>From Date:</strong> ${formatDate(leaveData.fromDate)}</p>
+                                    <p style="margin: 0;"><strong>To Date:</strong> ${formatDate(leaveData.toDate)}</p>
+                                    <p style="margin: 0;"><strong>Total Days:</strong> ${leaveData.totalDays} days</p>
+                                    <p style="margin: 0;"><strong>Reason:</strong> ${leaveData.reason}</p>
+                                    ${leaveData.adminComments ? `<p style="margin: 0;"><strong>Admin Comments:</strong> ${leaveData.adminComments}</p>` : ''}
+                                </div>
+                            </div>
+
+                            <div style="background-color: #fff3cd; padding: 20px; border: 1px solid #ffc107; margin: 25px 0; border-radius: 4px;">
+                                <h3 style="color: #856404; margin-top: 0;">⚠️ Important Instructions</h3>
+                                <ul style="margin: 0; color: #856404;">
+                                    <li>Save both QR codes below to your phone</li>
+                                    <li>Show the <strong>EXIT QR Code</strong> to security when leaving the hostel</li>
+                                    <li>Show the <strong>ENTRY QR Code</strong> to security when returning</li>
+                                    <li>QR codes are valid for 24 hours from the respective dates</li>
+                                    <li>Each QR code can only be used once</li>
+                                </ul>
+                            </div>
+
+                            <div style="background-color: white; padding: 20px; border-left: 4px solid #ff6b6b; margin: 25px 0; border-radius: 4px; text-align: center;">
+                                <h3 style="color: #dc3545; margin-top: 0;">🚪 EXIT QR Code (Show when leaving hostel)</h3>
+                                <p style="margin: 10px 0;"><strong>Valid from:</strong> ${formatDate(leaveData.fromDate)}</p>
+                                <img src="${qrCodes.entryQR.qrCode}" alt="Exit QR Code" style="max-width: 200px; border: 2px solid #ddd; border-radius: 8px; margin: 10px 0;" />
+                                <p style="margin: 0; color: #dc3545; font-weight: bold;">${qrCodes.entryQR.purpose}</p>
+                            </div>
+
+                            <div style="background-color: white; padding: 20px; border-left: 4px solid #28a745; margin: 25px 0; border-radius: 4px; text-align: center;">
+                                <h3 style="color: #28a745; margin-top: 0;">🏠 ENTRY QR Code (Show when returning to hostel)</h3>
+                                <p style="margin: 10px 0;"><strong>Valid from:</strong> ${formatDate(leaveData.toDate)}</p>
+                                <img src="${qrCodes.exitQR.qrCode}" alt="Entry QR Code" style="max-width: 200px; border: 2px solid #ddd; border-radius: 8px; margin: 10px 0;" />
+                                <p style="margin: 0; color: #28a745; font-weight: bold;">${qrCodes.exitQR.purpose}</p>
+                            </div>
+
+                            <div style="background-color: #d1ecf1; padding: 20px; border: 1px solid #bee5eb; margin: 25px 0; border-radius: 4px;">
+                                <h3 style="color: #0c5460; margin-top: 0;">📱 How to Use</h3>
+                                <ol style="margin: 0; color: #0c5460;">
+                                    <li>Save this email or take screenshots of the QR codes</li>
+                                    <li>When leaving: Show EXIT QR code to security</li>
+                                    <li>When returning: Show ENTRY QR code to security</li>
+                                    <li>Keep your student ID card with you at all times</li>
+                                </ol>
+                            </div>
+
+                            <p style="font-size: 16px; color: #555;">Have a safe trip and return on time!</p>
+                            
+                            <p style="font-size: 16px; color: #333;">
+                                Best regards,<br>
+                                <strong>Hostel Administration Team</strong>
+                            </p>
+                        </div>
+                        
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; border-top: 1px solid #dee2e6;">
+                            <p style="margin: 0;">This is an automated email. For queries, contact the hostel office.</p>
+                            <p style="margin: 10px 0 0 0;">© 2024 Hostel Management System</p>
+                        </div>
+                    </div>
+                `
+            };
+
+            await this.transporter.sendMail(mailOptions);
+            console.log('✅ Leave approval email sent to:', userEmail);
+            
+        } catch (error) {
+            console.error('❌ Error sending leave approval email:', error);
+            throw new Error('Failed to send leave approval email');
+        }
+    }
+
+    // Send leave application rejection email
+    async sendLeaveRejectionEmail(userEmail, studentData, leaveData, rejectionReason) {
+        try {
+            const formatDate = (date) => {
+                return new Date(date).toLocaleDateString('en-IN', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            };
+
+            const mailOptions = {
+                from: process.env.EMAIL_USER,
+                to: userEmail,
+                subject: '📋 Leave Application Status - Review Required',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                        <div style="background: linear-gradient(135deg, #ff6b6b, #ee5a52); color: white; padding: 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 28px;">📋 Leave Application Status</h1>
+                            <p style="margin: 10px 0 0 0; font-size: 18px;">Regarding your recent leave request</p>
+                        </div>
+                        
+                        <div style="padding: 30px; background-color: #f9f9f9;">
+                            <h2 style="color: #333; margin-top: 0;">Dear ${studentData.name},</h2>
+                            
+                            <p style="font-size: 16px; line-height: 1.6; color: #555;">
+                                Thank you for submitting your leave application. After careful consideration, we regret to inform you that your leave request cannot be approved at this time.
+                            </p>
+                            
+                            <div style="background-color: white; padding: 20px; border-left: 4px solid #ffc107; margin: 25px 0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                <h3 style="color: #856404; margin-top: 0;">📋 Your Leave Request</h3>
+                                <div style="display: grid; gap: 8px;">
+                                    <p style="margin: 0;"><strong>Leave Type:</strong> ${leaveData.leaveType}</p>
+                                    <p style="margin: 0;"><strong>Requested From:</strong> ${formatDate(leaveData.fromDate)}</p>
+                                    <p style="margin: 0;"><strong>Requested To:</strong> ${formatDate(leaveData.toDate)}</p>
+                                    <p style="margin: 0;"><strong>Total Days:</strong> ${leaveData.totalDays} days</p>
+                                    <p style="margin: 0;"><strong>Reason:</strong> ${leaveData.reason}</p>
+                                </div>
+                            </div>
+
+                            <div style="background-color: #f8d7da; padding: 20px; border: 1px solid #f5c6cb; margin: 25px 0; border-radius: 4px;">
+                                <h3 style="color: #721c24; margin-top: 0;">❌ Reason for Rejection</h3>
+                                <p style="margin: 0; color: #721c24;">
+                                    ${rejectionReason || leaveData.adminComments || 'Administrative decision - please contact the hostel office for more details.'}
+                                </p>
+                            </div>
+
+                            <div style="background-color: #d1ecf1; padding: 20px; border: 1px solid #bee5eb; margin: 25px 0; border-radius: 4px;">
+                                <h3 style="color: #0c5460; margin-top: 0;">🔄 Next Steps</h3>
+                                <ul style="margin: 0; color: #0c5460;">
+                                    <li>You may reapply with modified dates if circumstances allow</li>
+                                    <li>Contact the hostel office for clarification on the rejection reason</li>
+                                    <li>For urgent matters, please speak directly with the hostel warden</li>
+                                    <li>Emergency leave requests should be made through proper channels</li>
+                                </ul>
+                            </div>
+
+                            <p style="font-size: 16px; color: #555;">
+                                We understand this may be disappointing, and we encourage you to reach out if you have any questions or would like to discuss alternative arrangements.
+                            </p>
+                            
+                            <p style="font-size: 16px; color: #333;">
+                                Thank you for your understanding.<br><br>
+                                Best regards,<br>
+                                <strong>Hostel Administration Team</strong>
+                            </p>
+                        </div>
+                        
+                        <div style="background-color: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; border-top: 1px solid #dee2e6;">
+                            <p style="margin: 0;">For questions or appeals, please contact the hostel office during business hours.</p>
+                            <p style="margin: 10px 0 0 0;">© 2024 Hostel Management System</p>
+                        </div>
+                    </div>
+                `
+            };
+
+            await this.transporter.sendMail(mailOptions);
+            console.log('✅ Leave rejection email sent to:', userEmail);
+            
+        } catch (error) {
+            console.error('❌ Error sending leave rejection email:', error);
+            throw new Error('Failed to send leave rejection email');
+        }
+    }
+
     // Send admission rejection email
     async sendAdmissionRejection(applicantData, reason) {
         try {

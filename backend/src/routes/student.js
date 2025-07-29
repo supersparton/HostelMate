@@ -1026,4 +1026,371 @@ router.get('/community/my-posts', async (req, res) => {
     }
 });
 
+// ======================
+// LEAVE APPLICATION MANAGEMENT
+// ======================
+
+// Submit leave application
+router.post('/leave-applications', validateLeaveApplication, handleValidationErrors, async (req, res) => {
+    try {
+        const { leaveType, fromDate, toDate, reason } = req.body;
+        
+        console.log('Student submitting leave application:', {
+            studentId: req.student._id,
+            leaveType,
+            fromDate,
+            toDate,
+            reason
+        });
+
+        // Validate dates
+        const from = new Date(fromDate);
+        const to = new Date(toDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (from < today) {
+            return res.status(400).json({
+                success: false,
+                message: 'From date cannot be in the past'
+            });
+        }
+
+        if (to < from) {
+            return res.status(400).json({
+                success: false,
+                message: 'To date cannot be earlier than from date'
+            });
+        }
+
+        // Calculate total days
+        const totalDays = Math.ceil((to - from) / (1000 * 60 * 60 * 24)) + 1;
+
+        // Check for overlapping leave applications
+        const overlappingLeave = await LeaveApplication.findOne({
+            studentId: req.student._id,
+            status: { $in: ['PENDING', 'APPROVED'] },
+            $or: [
+                {
+                    fromDate: { $lte: to },
+                    toDate: { $gte: from }
+                }
+            ]
+        });
+
+        if (overlappingLeave) {
+            return res.status(400).json({
+                success: false,
+                message: 'You already have a leave application for overlapping dates',
+                conflictingLeave: {
+                    id: overlappingLeave._id,
+                    fromDate: overlappingLeave.fromDate,
+                    toDate: overlappingLeave.toDate,
+                    status: overlappingLeave.status
+                }
+            });
+        }
+
+        // Create leave application
+        const leaveApplication = new LeaveApplication({
+            studentId: req.student._id,
+            userId: req.user._id,
+            leaveType,
+            fromDate: from,
+            toDate: to,
+            reason,
+            status: 'PENDING'
+        });
+
+        console.log('About to save leave application:', {
+            studentId: leaveApplication.studentId,
+            userId: leaveApplication.userId,
+            leaveType: leaveApplication.leaveType,
+            fromDate: leaveApplication.fromDate,
+            toDate: leaveApplication.toDate,
+            reason: leaveApplication.reason
+        });
+
+        let savedLeave;
+        try {
+            savedLeave = await leaveApplication.save();
+            console.log('Leave application saved successfully with ID:', savedLeave._id);
+        } catch (saveError) {
+            console.error('Error saving leave application:', saveError);
+            return res.status(500).json({
+                success: false,
+                message: 'Error saving leave application',
+                error: saveError.message
+            });
+        }
+
+        // Populate the saved application for response
+        const populatedLeave = await LeaveApplication.findById(savedLeave._id)
+            .populate('studentId', 'name studentId roomNumber')
+            .populate('userId', 'email');
+
+        console.log('Populated leave application:', populatedLeave);
+
+        res.status(201).json({
+            success: true,
+            message: 'Leave application submitted successfully',
+            data: populatedLeave
+        });
+    } catch (error) {
+        console.error('Error submitting leave application:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error submitting leave application',
+            error: error.message
+        });
+    }
+});
+
+// Get student's leave applications
+router.get('/leave-applications', async (req, res) => {
+    try {
+        const { page = 1, limit = 20, status = '', sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+        
+        console.log('Fetching leave applications for student:', req.student._id);
+
+        const filter = { studentId: req.student._id };
+        
+        // Temporarily remove status filter
+        // if (status && status !== 'ALL') {
+        //     filter.status = status;
+        // }
+
+        const sortOptions = {};
+        sortOptions[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+        // Remove pagination temporarily to see all data
+        const leaveApplications = await LeaveApplication.find(filter)
+            .populate('approvedBy', 'name email')
+            .sort(sortOptions);
+            // .limit(limit * 1)
+            // .skip((page - 1) * limit);
+
+        console.log('Found leave applications for student:', leaveApplications.length);
+
+        const total = await LeaveApplication.countDocuments(filter);
+
+        // Get statistics
+        const stats = await LeaveApplication.aggregate([
+            { $match: { studentId: req.student._id } },
+            {
+                $group: {
+                    _id: '$status',
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+        
+        const statusCounts = {
+            PENDING: 0,
+            APPROVED: 0,
+            REJECTED: 0
+        };
+        
+        stats.forEach(stat => {
+            statusCounts[stat._id] = stat.count;
+        });
+
+        res.json({
+            success: true,
+            data: {
+                leaveApplications,
+                totalCount: total,
+                currentPage: parseInt(page),
+                totalPages: Math.ceil(total / limit),
+                hasMore: page * limit < total,
+                statistics: statusCounts
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching leave applications:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching leave applications',
+            error: error.message
+        });
+    }
+});
+
+// Get specific leave application by ID
+router.get('/leave-applications/:id', validateObjectId('id'), async (req, res) => {
+    try {
+        const leaveApplication = await LeaveApplication.findOne({
+            _id: req.params.id,
+            studentId: req.student._id
+        })
+        .populate('approvedBy', 'name email');
+
+        if (!leaveApplication) {
+            return res.status(404).json({
+                success: false,
+                message: 'Leave application not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: leaveApplication
+        });
+    } catch (error) {
+        console.error('Error fetching leave application:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching leave application',
+            error: error.message
+        });
+    }
+});
+
+// Cancel leave application (only if pending)
+router.delete('/leave-applications/:id', validateObjectId('id'), async (req, res) => {
+    try {
+        const leaveApplication = await LeaveApplication.findOne({
+            _id: req.params.id,
+            studentId: req.student._id,
+            status: 'PENDING'
+        });
+
+        if (!leaveApplication) {
+            return res.status(404).json({
+                success: false,
+                message: 'Leave application not found or cannot be cancelled'
+            });
+        }
+
+        await LeaveApplication.findByIdAndDelete(req.params.id);
+
+        res.json({
+            success: true,
+            message: 'Leave application cancelled successfully'
+        });
+    } catch (error) {
+        console.error('Error cancelling leave application:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error cancelling leave application',
+            error: error.message
+        });
+    }
+});
+
+// Get leave application QR codes (only for approved applications)
+router.get('/leave-applications/:id/qr-codes', validateObjectId('id'), async (req, res) => {
+    try {
+        const leaveApplication = await LeaveApplication.findOne({
+            _id: req.params.id,
+            studentId: req.student._id,
+            status: 'APPROVED'
+        });
+
+        if (!leaveApplication) {
+            return res.status(404).json({
+                success: false,
+                message: 'Approved leave application not found'
+            });
+        }
+
+        if (!leaveApplication.entryQRCode || !leaveApplication.exitQRCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'QR codes not generated for this leave application'
+            });
+        }
+
+        // Regenerate QR codes from stored tokens
+        const QRCode = require('qrcode');
+        const entryQRImage = await QRCode.toDataURL(leaveApplication.entryQRCode.code);
+        const exitQRImage = await QRCode.toDataURL(leaveApplication.exitQRCode.code);
+
+        res.json({
+            success: true,
+            data: {
+                leaveApplicationId: leaveApplication._id,
+                leaveType: leaveApplication.leaveType,
+                fromDate: leaveApplication.fromDate,
+                toDate: leaveApplication.toDate,
+                qrCodes: {
+                    entryQR: {
+                        qrCode: entryQRImage,
+                        used: leaveApplication.entryQRCode.used,
+                        usedAt: leaveApplication.entryQRCode.usedAt,
+                        purpose: 'Exit Hostel - Show this when leaving'
+                    },
+                    exitQR: {
+                        qrCode: exitQRImage,
+                        used: leaveApplication.exitQRCode.used,
+                        usedAt: leaveApplication.exitQRCode.usedAt,
+                        purpose: 'Enter Hostel - Show this when returning'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching QR codes:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching QR codes',
+            error: error.message
+        });
+    }
+});
+
+// Get leave calendar for student
+router.get('/leave-calendar', async (req, res) => {
+    try {
+        const { year = new Date().getFullYear(), month } = req.query;
+        
+        const filter = { 
+            studentId: req.student._id,
+            status: 'APPROVED'
+        };
+
+        // If month is specified, filter by month
+        if (month) {
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0);
+            filter.$or = [
+                {
+                    fromDate: { $lte: endDate },
+                    toDate: { $gte: startDate }
+                }
+            ];
+        } else {
+            // Filter by year
+            const startDate = new Date(year, 0, 1);
+            const endDate = new Date(year, 11, 31);
+            filter.$or = [
+                {
+                    fromDate: { $lte: endDate },
+                    toDate: { $gte: startDate }
+                }
+            ];
+        }
+
+        const leaveApplications = await LeaveApplication.find(filter)
+            .select('leaveType fromDate toDate totalDays reason')
+            .sort({ fromDate: 1 });
+
+        res.json({
+            success: true,
+            data: {
+                year: parseInt(year),
+                month: month ? parseInt(month) : null,
+                leaveApplications
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching leave calendar:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching leave calendar',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;

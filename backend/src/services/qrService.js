@@ -174,6 +174,155 @@ class QRService {
         }
     }
 
+    // Generate QR codes for leave application (entry and exit)
+    static async generateLeaveQRCodes(leaveApplication, student) {
+        try {
+            const baseData = {
+                leaveApplicationId: leaveApplication._id,
+                studentId: student._id,
+                studentCode: student.studentId,
+                roomNumber: student.roomNumber,
+                leaveType: leaveApplication.leaveType,
+                fromDate: leaveApplication.fromDate,
+                toDate: leaveApplication.toDate,
+                timestamp: Date.now()
+            };
+
+            // Generate Entry QR Code (for exiting the hostel)
+            const entryQRData = {
+                ...baseData,
+                type: 'LEAVE_ENTRY',
+                action: 'EXIT_HOSTEL',
+                validFrom: new Date(leaveApplication.fromDate),
+                validUntil: new Date(new Date(leaveApplication.fromDate).getTime() + (24 * 60 * 60 * 1000)) // Valid for 24 hours from start date
+            };
+
+            // Generate Exit QR Code (for re-entering the hostel)
+            const exitQRData = {
+                ...baseData,
+                type: 'LEAVE_EXIT',
+                action: 'ENTER_HOSTEL',
+                validFrom: new Date(leaveApplication.toDate),
+                validUntil: new Date(new Date(leaveApplication.toDate).getTime() + (24 * 60 * 60 * 1000)) // Valid for 24 hours from end date
+            };
+
+            const entryToken = jwt.sign(entryQRData, process.env.JWT_ACCESS_SECRET, { expiresIn: '30d' });
+            const exitToken = jwt.sign(exitQRData, process.env.JWT_ACCESS_SECRET, { expiresIn: '30d' });
+
+            const entryQRCode = await QRCode.toDataURL(entryToken);
+            const exitQRCode = await QRCode.toDataURL(exitToken);
+
+            return {
+                entryQR: {
+                    qrCode: entryQRCode,
+                    code: entryToken, // Store the token as 'code' to match model
+                    data: entryQRData,
+                    purpose: 'Exit Hostel - Show this when leaving'
+                },
+                exitQR: {
+                    qrCode: exitQRCode,
+                    code: exitToken, // Store the token as 'code' to match model
+                    data: exitQRData,
+                    purpose: 'Enter Hostel - Show this when returning'
+                }
+            };
+        } catch (error) {
+            throw new Error('Error generating leave QR codes: ' + error.message);
+        }
+    }
+
+    // Verify leave QR code and mark as used
+    static async verifyLeaveQR(token, leaveApplicationModel) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+            
+            // Check if it's a leave-related QR
+            if (!['LEAVE_ENTRY', 'LEAVE_EXIT'].includes(decoded.type)) {
+                return {
+                    valid: false,
+                    error: 'Invalid QR code type for leave management'
+                };
+            }
+
+            // Check validity period
+            const now = new Date();
+            if (decoded.validFrom && now < new Date(decoded.validFrom)) {
+                return {
+                    valid: false,
+                    error: 'QR code is not yet valid'
+                };
+            }
+            
+            if (decoded.validUntil && now > new Date(decoded.validUntil)) {
+                return {
+                    valid: false,
+                    error: 'QR code has expired'
+                };
+            }
+
+            // Find the leave application
+            const leaveApp = await leaveApplicationModel.findById(decoded.leaveApplicationId);
+            if (!leaveApp) {
+                return {
+                    valid: false,
+                    error: 'Leave application not found'
+                };
+            }
+
+            // Check if leave is approved
+            if (leaveApp.status !== 'APPROVED') {
+                return {
+                    valid: false,
+                    error: 'Leave application is not approved'
+                };
+            }
+
+            // Check if QR code was already used
+            const qrField = decoded.type === 'LEAVE_ENTRY' ? 'entryQRCode' : 'exitQRCode';
+            if (leaveApp[qrField].used) {
+                return {
+                    valid: false,
+                    error: 'QR code has already been used',
+                    usedAt: leaveApp[qrField].usedAt
+                };
+            }
+
+            return {
+                valid: true,
+                data: decoded,
+                leaveApplication: leaveApp,
+                qrType: decoded.type,
+                action: decoded.action
+            };
+        } catch (error) {
+            return {
+                valid: false,
+                error: error.message
+            };
+        }
+    }
+
+    // Mark leave QR code as used
+    static async markLeaveQRAsUsed(leaveApplicationId, qrType, leaveApplicationModel) {
+        try {
+            const qrField = qrType === 'LEAVE_ENTRY' ? 'entryQRCode' : 'exitQRCode';
+            const updateData = {
+                [`${qrField}.used`]: true,
+                [`${qrField}.usedAt`]: new Date()
+            };
+
+            const updatedLeave = await leaveApplicationModel.findByIdAndUpdate(
+                leaveApplicationId,
+                updateData,
+                { new: true }
+            );
+
+            return updatedLeave;
+        } catch (error) {
+            throw new Error('Error marking QR code as used: ' + error.message);
+        }
+    }
+
     // Generate QR code with custom options
     static async generateCustomQR(data, options = {}) {
         try {

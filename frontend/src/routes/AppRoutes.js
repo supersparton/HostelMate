@@ -20,7 +20,7 @@ import {
   RoomManagement, 
   MenuManagement, 
   AttendanceReport, 
-  LeaveManagement, 
+  LeaveManagementPage, 
   ComplaintManagement, 
   Reports 
 } from '../pages/admin';
@@ -32,7 +32,7 @@ import {
   StudentProfile, 
   MealBooking, 
   AttendanceView, 
-  LeaveApplication, 
+  LeaveApplicationPage, 
   ComplaintSubmission, 
   CommunityForum 
 } from '../pages/student';
@@ -168,7 +168,7 @@ const AppRoutes = () => {
         path="/admin/leave"
         element={
           <ProtectedRoute requiredRole="ADMIN">
-            <LeaveManagement />
+            <LeaveManagementPage />
           </ProtectedRoute>
         }
       />
@@ -226,7 +226,7 @@ const AppRoutes = () => {
         path="/student/leave"
         element={
           <ProtectedRoute requiredRole="STUDENT">
-            <LeaveApplication />
+            <LeaveApplicationPage />
           </ProtectedRoute>
         }
       />

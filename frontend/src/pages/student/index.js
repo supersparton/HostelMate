@@ -1,6 +1,7 @@
-// Placeholder student pages
+// Student pages
 import React from 'react';
 import Navigation from '../../components/layout/Navigation.jsx';
+import LeaveApplication from './LeaveApplication';
 
 export const StudentProfile = () => (
   <div className="min-h-screen bg-gray-50">
@@ -41,15 +42,11 @@ export const AttendanceView = () => (
   </div>
 );
 
-export const LeaveApplication = () => (
+export const LeaveApplicationPage = () => (
   <div className="min-h-screen bg-gray-50">
     <Navigation />
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900">Leave Application</h1>
-      <p className="text-gray-600 mt-2">Apply for leave from hostel</p>
-      <div className="bg-white rounded-lg shadow p-6 mt-6">
-        <p className="text-gray-500">Leave application features coming soon...</p>
-      </div>
+      <LeaveApplication />
     </div>
   </div>
 );

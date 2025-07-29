@@ -94,6 +94,10 @@ const validateLogin = [
 ];
 
 const validateLeaveApplication = [
+    body('leaveType')
+        .isIn(['HOME_VISIT', 'MEDICAL', 'EMERGENCY', 'PERSONAL', 'FESTIVAL', 'ACADEMIC', 'OTHER'])
+        .withMessage('Invalid leave type'),
+    
     body('fromDate')
         .isISO8601()
         .withMessage('Please provide a valid start date'),
