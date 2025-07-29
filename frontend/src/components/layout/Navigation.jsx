@@ -15,7 +15,8 @@ import {
   X,
   Shield,
   BookOpen,
-  BarChart3
+  BarChart3,
+  Utensils
 } from 'lucide-react';
 
 const Navigation = () => {
@@ -37,7 +38,7 @@ const Navigation = () => {
   const studentNavItems = [
     { path: '/student/dashboard', label: 'Dashboard', icon: Home },
     { path: '/student/profile', label: 'Profile', icon: User },
-    { path: '/student/meals', label: 'Meals', icon: BookOpen },
+    { path: '/student/menu', label: 'Menu', icon: BookOpen },
     { path: '/student/attendance', label: 'Attendance', icon: ClipboardList },
     { path: '/student/leave', label: 'Leave', icon: Calendar },
     { path: '/student/complaints', label: 'Complaints', icon: MessageSquare },

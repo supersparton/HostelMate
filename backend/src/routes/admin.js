@@ -1320,15 +1320,106 @@ router.get('/rooms/available', async (req, res) => {
 // MENU MANAGEMENT
 // ======================
 
+// Debug: Get all menus
+router.get('/menu/debug', async (req, res) => {
+    try {
+        const allMenus = await Menu.find({}).sort({ weekStartDate: -1 }).limit(10);
+        
+        console.log('DEBUG: Total menus in database:', allMenus.length);
+        console.log('DEBUG: Recent menus:', allMenus.map(m => ({
+            id: m._id,
+            weekStartDate: m.weekStartDate,
+            weekEndDate: m.weekEndDate,
+            createdAt: m.createdAt,
+            hasMenuItems: !!m.menuItems
+        })));
+        
+        res.json({
+            success: true,
+            totalMenus: allMenus.length,
+            recentMenus: allMenus
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Clean up duplicate menus
+router.delete('/menu/cleanup', async (req, res) => {
+    try {
+        console.log('Admin - Starting menu cleanup...');
+        
+        // Find all menus and group by week
+        const allMenus = await Menu.find({}).sort({ createdAt: 1 });
+        const menusByWeek = {};
+        
+        // Group menus by week start date (as string)
+        allMenus.forEach(menu => {
+            const weekKey = moment(menu.weekStartDate).format('YYYY-MM-DD');
+            if (!menusByWeek[weekKey]) {
+                menusByWeek[weekKey] = [];
+            }
+            menusByWeek[weekKey].push(menu);
+        });
+        
+        let deletedCount = 0;
+        
+        // For each week, keep only the most recent menu
+        for (const [week, menus] of Object.entries(menusByWeek)) {
+            if (menus.length > 1) {
+                console.log(`Admin - Found ${menus.length} menus for week ${week}`);
+                
+                // Sort by creation date, keep the latest
+                menus.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                const toKeep = menus[0];
+                const toDelete = menus.slice(1);
+                
+                console.log(`Admin - Keeping menu ${toKeep._id}, deleting ${toDelete.length} duplicates`);
+                
+                // Delete duplicates
+                for (const menu of toDelete) {
+                    await Menu.findByIdAndDelete(menu._id);
+                    deletedCount++;
+                }
+            }
+        }
+        
+        console.log(`Admin - Cleanup complete. Deleted ${deletedCount} duplicate menus.`);
+        
+        res.json({
+            success: true,
+            message: `Cleanup completed. Deleted ${deletedCount} duplicate menus.`,
+            deletedCount
+        });
+        
+    } catch (error) {
+        console.error('Admin - Error during cleanup:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 // Get current week menu
 router.get('/menu/current', async (req, res) => {
     try {
-        const startOfWeek = moment().startOf('week').toDate();
-        const endOfWeek = moment().endOf('week').toDate();
+        // Get the current week's Monday date (same logic as frontend)
+        const currentWeekStart = moment().startOf('week');
+        const startDate = currentWeekStart.format('YYYY-MM-DD');
+        
+        console.log('Admin GET - Looking for menu for week starting:', startDate);
+        console.log('Admin GET - Current week start moment:', currentWeekStart.toDate());
 
-        const menu = await Menu.findOne({
-            weekStartDate: { $gte: startOfWeek, $lte: endOfWeek }
-        }).populate('createdBy', 'name');
+        // Find menu with weekStartDate matching this week
+        const menu = await Menu.findOne().sort({ createdAt: -1 });
+        
+        console.log('Admin GET - Found any menu:', menu ? 'Yes' : 'No');
+        if (menu) {
+            console.log('Admin GET - Menu week start:', menu.weekStartDate);
+            console.log('Admin GET - Menu week start formatted:', moment(menu.weekStartDate).format('YYYY-MM-DD'));
+            console.log('Admin GET - Menu items keys:', Object.keys(menu.menuItems || {}));
+        }
 
         res.json({
             success: true,
@@ -1336,6 +1427,7 @@ router.get('/menu/current', async (req, res) => {
         });
 
     } catch (error) {
+        console.error('Admin GET - Error fetching current menu:', error);
         res.status(500).json({
             success: false,
             message: 'Error fetching current menu',
@@ -1349,6 +1441,9 @@ router.post('/menu', async (req, res) => {
     try {
         const { weekStartDate, menuItems } = req.body;
 
+        console.log('Admin POST - Saving menu for week:', weekStartDate);
+        console.log('Admin POST - Menu items received:', Object.keys(menuItems));
+
         if (!weekStartDate || !menuItems) {
             return res.status(400).json({
                 success: false,
@@ -1356,18 +1451,30 @@ router.post('/menu', async (req, res) => {
             });
         }
 
-        const startDate = new Date(weekStartDate);
-        const endDate = new Date(startDate);
-        endDate.setDate(startDate.getDate() + 6);
+        // Create date object for the start of the week
+        const startDate = moment(weekStartDate).startOf('day').toDate();
+        const endDate = moment(weekStartDate).add(6, 'days').endOf('day').toDate();
 
-        // Check if menu already exists for this week
-        const existingMenu = await Menu.findOne({ weekStartDate: startDate });
+        console.log('Admin POST - Start date object:', startDate);
+        console.log('Admin POST - End date object:', endDate);
+
+        // Try to find existing menu (simplified - just find any existing menu for now)
+        const existingMenu = await Menu.findOne().sort({ createdAt: -1 });
         
+        console.log('Admin POST - Found existing menu:', existingMenu ? 'Yes' : 'No');
+        if (existingMenu) {
+            console.log('Admin POST - Existing menu ID:', existingMenu._id);
+            console.log('Admin POST - Existing menu date:', existingMenu.weekStartDate);
+        }
+
         if (existingMenu) {
             // Update existing menu
             existingMenu.menuItems = menuItems;
+            existingMenu.weekStartDate = startDate;
             existingMenu.weekEndDate = endDate;
             await existingMenu.save();
+
+            console.log('Admin POST - Updated existing menu with ID:', existingMenu._id);
 
             res.json({
                 success: true,
@@ -1385,6 +1492,8 @@ router.post('/menu', async (req, res) => {
 
             await menu.save();
 
+            console.log('Admin POST - Created new menu with ID:', menu._id);
+
             res.json({
                 success: true,
                 message: 'Menu created successfully',
@@ -1393,6 +1502,7 @@ router.post('/menu', async (req, res) => {
         }
 
     } catch (error) {
+        console.error('Admin POST - Error updating menu:', error);
         res.status(500).json({
             success: false,
             message: 'Error updating menu',

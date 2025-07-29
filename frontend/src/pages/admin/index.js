@@ -2,6 +2,7 @@
 import React from 'react';
 import Navigation from '../../components/layout/Navigation.jsx';
 import LeaveManagement from './LeaveManagement';
+import MenuManagement from './MenuManagement';
 
 export const RoomManagement = () => (
   <div className="min-h-screen bg-gray-50">
@@ -16,15 +17,11 @@ export const RoomManagement = () => (
   </div>
 );
 
-export const MenuManagement = () => (
+export const MenuManagementPage = () => (
   <div className="min-h-screen bg-gray-50">
     <Navigation />
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
-      <p className="text-gray-600 mt-2">Manage daily meal menus and schedules</p>
-      <div className="bg-white rounded-lg shadow p-6 mt-6">
-        <p className="text-gray-500">Menu management features coming soon...</p>
-      </div>
+      <MenuManagement />
     </div>
   </div>
 );

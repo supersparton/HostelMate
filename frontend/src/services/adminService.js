@@ -109,24 +109,24 @@ const adminService = {
   },
 
   // Menu management
-  getMenus: () => {
+  getCurrentMenu: () => {
     const api = createAuthApi();
-    return api.get('/admin/menus');
+    return api.get('/admin/menu/current');
   },
 
-  createMenu: (menuData) => {
+  createOrUpdateMenu: (menuData) => {
     const api = createAuthApi();
-    return api.post('/admin/menus', menuData);
+    return api.post('/admin/menu', menuData);
   },
 
-  updateMenu: (menuId, menuData) => {
+  debugMenus: () => {
     const api = createAuthApi();
-    return api.put(`/admin/menus/${menuId}`, menuData);
+    return api.get('/admin/menu/debug');
   },
 
-  deleteMenu: (menuId) => {
+  cleanupMenus: () => {
     const api = createAuthApi();
-    return api.delete(`/admin/menus/${menuId}`);
+    return api.delete('/admin/menu/cleanup');
   },
 
   // Attendance management

@@ -141,12 +141,21 @@ router.get('/dashboard', async (req, res) => {
 // Get current week menu
 router.get('/menu', async (req, res) => {
     try {
-        const startOfWeek = moment().startOf('week').toDate();
-        const endOfWeek = moment().endOf('week').toDate();
+        // Get the current week's Monday date (same logic as frontend)
+        const currentWeekStart = moment().startOf('week');
+        const startDate = currentWeekStart.format('YYYY-MM-DD');
+        
+        console.log('Student GET - Looking for menu for week starting:', startDate);
+        console.log('Student GET - Current week start moment:', currentWeekStart.toDate());
 
-        const menu = await Menu.findOne({
-            weekStartDate: { $gte: startOfWeek, $lte: endOfWeek }
-        });
+        // Find the most recent menu (temporary fix)
+        const menu = await Menu.findOne().sort({ createdAt: -1 });
+        
+        console.log('Student GET - Found any menu:', menu ? 'Yes' : 'No');
+        if (menu) {
+            console.log('Student GET - Menu week start:', menu.weekStartDate);
+            console.log('Student GET - Menu week start formatted:', moment(menu.weekStartDate).format('YYYY-MM-DD'));
+        }
 
         if (!menu) {
             return res.json({
@@ -178,6 +187,7 @@ router.get('/menu', async (req, res) => {
         });
 
     } catch (error) {
+        console.error('Student GET - Error fetching menu:', error);
         res.status(500).json({
             success: false,
             message: 'Error fetching menu',

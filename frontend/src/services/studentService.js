@@ -170,9 +170,9 @@ const studentService = {
   },
 
   // Menu
-  getMenu: (date) => {
+  getMenu: () => {
     const api = createAuthApi();
-    return api.get('/student/menu', { params: { date } });
+    return api.get('/student/menu');
   },
 
   // Fees and payments

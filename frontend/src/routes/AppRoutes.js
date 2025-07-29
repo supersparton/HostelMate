@@ -18,7 +18,7 @@ import ApplicationsManager from '../pages/admin/ApplicationsManager';
 import SimpleApplicationTest from '../pages/admin/SimpleApplicationTest';
 import { 
   RoomManagement, 
-  MenuManagement, 
+  MenuManagementPage, 
   AttendanceReport, 
   LeaveManagementPage, 
   ComplaintManagement, 
@@ -30,6 +30,7 @@ import StudentDashboard from '../pages/student/StudentDashboard';
 import QRCodeView from '../pages/student/QRCodeView';
 import { 
   StudentProfile, 
+  MenuViewPage, 
   MealBooking, 
   AttendanceView, 
   LeaveApplicationPage, 
@@ -152,7 +153,7 @@ const AppRoutes = () => {
         path="/admin/menu"
         element={
           <ProtectedRoute requiredRole="ADMIN">
-            <MenuManagement />
+            <MenuManagementPage />
           </ProtectedRoute>
         }
       />
@@ -203,6 +204,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute requiredRole="STUDENT">
             <StudentProfile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/menu"
+        element={
+          <ProtectedRoute requiredRole="STUDENT">
+            <MenuViewPage />
           </ProtectedRoute>
         }
       />
