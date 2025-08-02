@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { Eye } from 'lucide-react';
 import { adminService } from '../../services/adminService';
+import StudentProfileModal from '../../components/admin/StudentProfileModal.jsx';
 
 const LeaveManagement = () => {
     const [filters, setFilters] = useState({
@@ -15,6 +17,10 @@ const LeaveManagement = () => {
     const [showModal, setShowModal] = useState(false);
     const [actionType, setActionType] = useState(''); // 'approve' or 'reject'
     const [adminComments, setAdminComments] = useState('');
+    
+    // Student profile modal state
+    const [selectedStudentId, setSelectedStudentId] = useState(null);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
     const queryClient = useQueryClient();
 
@@ -28,14 +34,14 @@ const LeaveManagement = () => {
         }
     );
 
-    // Fetch leave statistics
-    const { data: statsData } = useQuery(
-        ['admin', 'leave-statistics'],
-        () => adminService.getLeaveStatistics(),
-        {
-            refetchInterval: 60000 // Refresh every minute
-        }
-    );
+    // Fetch leave statistics (commented out - not currently used)
+    // const { data: statsData } = useQuery(
+    //     ['admin', 'leave-statistics'],
+    //     () => adminService.getLeaveStatistics(),
+    //     {
+    //         refetchInterval: 60000 // Refresh every minute
+    //     }
+    // );
 
     // Approve leave mutation
     const approveLeave = useMutation(
@@ -89,6 +95,17 @@ const LeaveManagement = () => {
         setSelectedLeave(null);
         setActionType('');
         setAdminComments('');
+    };
+
+    // Student profile modal functions
+    const openStudentProfile = (studentId) => {
+        setSelectedStudentId(studentId);
+        setIsProfileModalOpen(true);
+    };
+
+    const closeStudentProfile = () => {
+        setSelectedStudentId(null);
+        setIsProfileModalOpen(false);
     };
 
     const handleSubmitAction = () => {
@@ -287,13 +304,24 @@ const LeaveManagement = () => {
                                 leaveApplications.map((leave) => (
                                     <tr key={leave._id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div>
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {leave.studentName || leave.studentId?.name || 'Unknown Student'}
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <div className="text-sm font-medium text-gray-900">
+                                                        {leave.studentName || leave.studentId?.name || 'Unknown Student'}
+                                                    </div>
+                                                    <div className="text-sm text-gray-500">
+                                                        {leave.studentId?.studentId} • Room {leave.studentRoom || leave.studentId?.roomNumber || 'N/A'}
+                                                    </div>
                                                 </div>
-                                                <div className="text-sm text-gray-500">
-                                                    {leave.studentId?.studentId} • Room {leave.studentRoom || leave.studentId?.roomNumber || 'N/A'}
-                                                </div>
+                                                {leave.studentId?._id && (
+                                                    <button
+                                                        onClick={() => openStudentProfile(leave.studentId._id)}
+                                                        className="ml-2 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded-full hover:bg-blue-50"
+                                                        title="View Student Profile"
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -447,6 +475,13 @@ const LeaveManagement = () => {
                     </div>
                 </div>
             )}
+
+            {/* Student Profile Modal */}
+            <StudentProfileModal 
+                studentId={selectedStudentId}
+                isOpen={isProfileModalOpen}
+                onClose={closeStudentProfile}
+            />
         </div>
     );
 };

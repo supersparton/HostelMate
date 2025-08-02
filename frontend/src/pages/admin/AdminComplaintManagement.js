@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { adminService } from '../../services/adminService';
+import StudentProfileModal from '../../components/admin/StudentProfileModal.jsx';
 import { 
   MessageSquare, 
   Clock, 
@@ -12,7 +13,6 @@ import {
   Tag,
   AlertTriangle,
   Search,
-  Filter,
   Eye,
   Edit,
   CheckCheck
@@ -31,6 +31,22 @@ const AdminComplaintManagement = () => {
     status: '',
     adminResponse: ''
   });
+  
+  // Student profile modal state
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  // Student Profile Modal Functions
+  const openStudentProfile = (studentId) => {
+    setSelectedStudentId(studentId);
+    setIsProfileModalOpen(true);
+  };
+
+  const closeStudentProfile = () => {
+    setSelectedStudentId(null);
+    setIsProfileModalOpen(false);
+  };
+  
   const queryClient = useQueryClient();
 
   // Fetch complaints
@@ -278,7 +294,16 @@ const AdminComplaintManagement = () => {
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3">
                       <div className="flex items-center gap-1">
                         <User className="w-4 h-4" />
-                        {complaint.studentId?.userId?.name || 'Unknown Student'}
+                        <span>{complaint.studentId?.userId?.name || 'Unknown Student'}</span>
+                        {complaint.studentId?._id && (
+                          <button
+                            onClick={() => openStudentProfile(complaint.studentId._id)}
+                            className="ml-1 p-1 text-gray-400 hover:text-blue-600 transition-colors rounded-full hover:bg-blue-50"
+                            title="View Student Profile"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
@@ -489,6 +514,13 @@ const AdminComplaintManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Student Profile Modal */}
+      <StudentProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={closeStudentProfile}
+        studentId={selectedStudentId}
+      />
     </div>
   );
 };

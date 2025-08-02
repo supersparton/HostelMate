@@ -72,6 +72,11 @@ const adminService = {
     return api.get('/admin/students');
   },
 
+  getStudentById: (studentId) => {
+    const api = createAuthApi();
+    return api.get(`/admin/students/${studentId}`);
+  },
+
   acceptAdmission: (applicationId, roomData) => {
     const api = createAuthApi();
     return api.post(`/admin/admissions/${applicationId}/accept`, roomData);

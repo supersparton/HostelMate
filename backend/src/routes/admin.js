@@ -614,6 +614,16 @@ router.get('/students', async (req, res) => {
             parentPhone: student.parentPhone,
             address: student.address,
             emergencyContact: student.emergencyContact,
+            profilePicture: student.profilePicture,
+            dateOfBirth: student.dateOfBirth,
+            bloodGroup: student.bloodGroup,
+            nationality: student.nationality,
+            collegeName: student.collegeName,
+            department: student.department,
+            alternatePhone: student.alternatePhone,
+            guardianName: student.guardianName,
+            guardianPhone: student.guardianPhone,
+            guardianRelation: student.guardianRelation,
             createdAt: student.createdAt
         }));
 
@@ -631,6 +641,73 @@ router.get('/students', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching students',
+            error: error.message
+        });
+    }
+});
+
+// Get individual student by ID
+router.get('/students/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        console.log('Fetching student with ID:', id);
+
+        const student = await Student.findById(id)
+            .populate('userId', 'name email phone');
+
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student not found'
+            });
+        }
+
+        // Format response with complete student details
+        const studentDetails = {
+            _id: student._id,
+            studentId: student.studentId,
+            name: student.userId?.name || 'N/A',
+            email: student.userId?.email || 'N/A',
+            phone: student.userId?.phone || 'N/A',
+            course: student.course,
+            year: student.year,
+            rollNumber: student.rollNumber,
+            roomNumber: student.roomNumber,
+            bedLetter: student.bedLetter,
+            admissionStatus: student.admissionStatus,
+            admissionDate: student.admissionDate,
+            caste: student.caste,
+            religion: student.religion,
+            income: student.income,
+            parentName: student.parentName,
+            parentPhone: student.parentPhone,
+            address: student.address,
+            emergencyContact: student.emergencyContact,
+            profilePicture: student.profilePicture,
+            dateOfBirth: student.dateOfBirth,
+            bloodGroup: student.bloodGroup,
+            nationality: student.nationality,
+            collegeName: student.collegeName,
+            department: student.department,
+            alternatePhone: student.alternatePhone,
+            guardianName: student.guardianName,
+            guardianPhone: student.guardianPhone,
+            guardianRelation: student.guardianRelation,
+            createdAt: student.createdAt
+        };
+
+        res.json({
+            success: true,
+            message: 'Student details fetched successfully',
+            data: studentDetails
+        });
+
+    } catch (error) {
+        console.error('Error fetching student:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching student details',
             error: error.message
         });
     }
@@ -2052,6 +2129,7 @@ router.get('/dashboard', async (req, res) => {
         // Recent activities
         let recentAdmissions = [];
         let recentComplaints = [];
+        let recentLeaves = [];
         
         try {
             recentAdmissions = await Application.find({ status: 'PENDING' })
@@ -2063,11 +2141,32 @@ router.get('/dashboard', async (req, res) => {
 
         try {
             recentComplaints = await Complaint.find({ status: 'OPEN' })
-                .populate('studentId')
+                .populate({
+                    path: 'studentId',
+                    populate: {
+                        path: 'userId',
+                        select: 'name email'
+                    }
+                })
                 .sort({ createdAt: -1 })
                 .limit(5);
         } catch (error) {
             console.error('Error fetching recent complaints:', error);
+        }
+
+        try {
+            recentLeaves = await LeaveApplication.find({ status: 'PENDING' })
+                .populate({
+                    path: 'studentId',
+                    populate: {
+                        path: 'userId',
+                        select: 'name email'
+                    }
+                })
+                .sort({ createdAt: -1 })
+                .limit(5);
+        } catch (error) {
+            console.error('Error fetching recent leaves:', error);
         }
 
         const dashboardData = {
@@ -2084,7 +2183,8 @@ router.get('/dashboard', async (req, res) => {
             monthlyMeals,
             recentActivities: {
                 admissions: recentAdmissions,
-                complaints: recentComplaints
+                complaints: recentComplaints,
+                leaves: recentLeaves
             }
         };
 
