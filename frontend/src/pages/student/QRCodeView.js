@@ -1,72 +1,40 @@
-import React, { useState } from 'react';
-import { useQuery } from 'react-query';
-import QRCode from 'qrcode.react';
-import { Download, RefreshCw, Clock, User, Building } from 'lucide-react';
+import React from 'react';
+import { QrCode, Clock, Star, Zap, Shield, Smartphone } from 'lucide-react';
 import Navigation from '../../components/layout/Navigation.jsx';
-import LoadingSpinner from '../../components/common/LoadingSpinner.jsx';
-import studentService from '../../services/studentService';
-import toast from 'react-hot-toast';
 
 const QRCodeView = () => {
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const { data: qrData, isLoading, error, refetch } = useQuery(
-    'studentQRCode',
-    studentService.getQRCode,
+  const features = [
     {
-      refetchInterval: 300000, // Refresh every 5 minutes
-      staleTime: 240000, // Consider data stale after 4 minutes
+      icon: QrCode,
+      title: 'Dynamic QR Generation',
+      description: 'Secure, time-based QR codes for attendance marking'
+    },
+    {
+      icon: Clock,
+      title: 'Real-time Sync',
+      description: 'Instant attendance recording and verification'
+    },
+    {
+      icon: Shield,
+      title: 'Enhanced Security',
+      description: 'Anti-fraud measures with encrypted QR data'
+    },
+    {
+      icon: Smartphone,
+      title: 'Mobile Optimized',
+      description: 'Perfect scanning experience on all devices'
+    },
+    {
+      icon: Zap,
+      title: 'Lightning Fast',
+      description: 'Quick scan and instant attendance confirmation'
+    },
+    {
+      icon: Star,
+      title: 'Smart Analytics',
+      description: 'Detailed attendance insights and reporting'
     }
-  );
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refetch();
-      toast.success('QR Code refreshed successfully');
-    } catch (error) {
-      toast.error('Failed to refresh QR Code');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const downloadQR = () => {
-    const canvas = document.getElementById('qr-code-canvas');
-    if (canvas) {
-      const url = canvas.toDataURL();
-      const link = document.createElement('a');
-      link.download = `hostelmate-qr-${Date.now()}.png`;
-      link.href = url;
-      link.click();
-      toast.success('QR Code downloaded successfully');
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <LoadingSpinner text="Generating QR Code..." />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="bg-red-50 border border-red-200 rounded-md p-4">
-            <p className="text-red-600">Error loading QR Code: {error.message}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const qrInfo = qrData?.data || {};
-  const studentInfo = qrInfo.qrData || {};
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -74,164 +42,112 @@ const QRCodeView = () => {
       
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Your QR Code</h1>
-          <p className="text-gray-600 mt-2">
-            Use this QR code for attendance marking during meal times
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-6">
+            <QrCode className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            QR Code Attendance
+          </h1>
+          <div className="inline-flex items-center bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full font-semibold text-lg mb-4">
+            <Clock className="w-5 h-5 mr-2" />
+            Coming Soon
+          </div>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            We're building an advanced QR code system for seamless attendance tracking. 
+            Get ready for a revolutionary hostel management experience!
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* QR Code Section */}
-          <div className="bg-white rounded-xl shadow-sm border p-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-                Attendance QR Code
-              </h2>
-              
-              {/* QR Code */}
-              <div className="bg-white p-6 rounded-lg border-2 border-gray-200 inline-block mb-6">
-                <QRCode
-                  id="qr-code-canvas"
-                  value={qrInfo.qrString || ''}
-                  size={200}
-                  level="M"
-                  includeMargin={true}
-                  style={{ width: '100%', height: 'auto' }}
-                />
-              </div>
-
-              {/* QR Code Actions */}
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  {isRefreshing ? 'Refreshing...' : 'Refresh QR'}
-                </button>
-                <button
-                  onClick={downloadQR}
-                  className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Download QR
-                </button>
-              </div>
-
-              {/* Validity Info */}
-              <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                <div className="flex items-center justify-center text-yellow-800">
-                  <Clock className="h-4 w-4 mr-2" />
-                  <span className="text-sm font-medium">
-                    Valid for {Math.floor((new Date(qrInfo.expiresAt) - new Date()) / (1000 * 60))} minutes
-                  </span>
+        {/* Features Grid */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            What's Coming
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => {
+              const Icon = feature.icon;
+              return (
+                <div key={index} className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-lg transition-all duration-300 hover:scale-105">
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg p-3 w-fit mb-4">
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-gray-600">
+                    {feature.description}
+                  </p>
                 </div>
-                <p className="text-xs text-yellow-700 mt-1">
-                  QR Code expires at {new Date(qrInfo.expiresAt).toLocaleTimeString()}
-                </p>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Progress Section */}
+        <div className="bg-white rounded-xl shadow-sm border p-8 mb-16">
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Development Progress
+            </h3>
+            <div className="max-w-md mx-auto">
+              <div className="flex justify-between text-sm text-gray-600 mb-2">
+                <span>Progress</span>
+                <span>75%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-1000 ease-out"
+                  style={{ width: '75%' }}
+                ></div>
+              </div>
+              <p className="text-gray-500 mt-4">
+                Almost there! We're in the final stages of testing and optimization.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Timeline */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 text-white">
+          <div className="text-center">
+            <h3 className="text-2xl font-bold mb-6">
+              Expected Timeline
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="bg-white bg-opacity-20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl font-bold">1</span>
+                </div>
+                <h4 className="font-semibold mb-2">Phase 1</h4>
+                <p className="text-blue-100">Core QR generation system</p>
+              </div>
+              <div className="text-center">
+                <div className="bg-white bg-opacity-20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl font-bold">2</span>
+                </div>
+                <h4 className="font-semibold mb-2">Phase 2</h4>
+                <p className="text-blue-100">Security & validation features</p>
+              </div>
+              <div className="text-center">
+                <div className="bg-white bg-opacity-20 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl font-bold">3</span>
+                </div>
+                <h4 className="font-semibold mb-2">Phase 3</h4>
+                <p className="text-blue-100">Analytics & reporting dashboard</p>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Student Information */}
-          <div className="space-y-6">
-            {/* Student Details */}
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">Your Information</h3>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <User className="h-5 w-5 text-gray-400 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">Name</p>
-                    <p className="font-medium text-gray-900">{studentInfo.name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <Building className="h-5 w-5 text-gray-400 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">Room & Bed</p>
-                    <p className="font-medium text-gray-900">
-                      Room {studentInfo.roomNumber} - Bed {studentInfo.bedLetter}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-5 h-5 mr-3 flex items-center justify-center">
-                    <span className="text-gray-400 text-xs font-bold">#</span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Student ID</p>
-                    <p className="font-medium text-gray-900">{studentInfo.studentId}</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <Clock className="h-5 w-5 text-gray-400 mr-3" />
-                  <div>
-                    <p className="text-sm text-gray-600">Generated At</p>
-                    <p className="font-medium text-gray-900">
-                      {new Date(qrInfo.generatedAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="bg-white rounded-xl shadow-sm border p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">How to Use</h3>
-              <div className="space-y-3 text-sm text-gray-600">
-                <div className="flex items-start">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                    <span className="text-blue-600 text-xs font-bold">1</span>
-                  </div>
-                  <p>Show this QR code to the mess staff during meal times</p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                    <span className="text-blue-600 text-xs font-bold">2</span>
-                  </div>
-                  <p>Staff will scan the QR code to mark your attendance</p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                    <span className="text-blue-600 text-xs font-bold">3</span>
-                  </div>
-                  <p>Your attendance will be automatically recorded in the system</p>
-                </div>
-                <div className="flex items-start">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
-                    <span className="text-blue-600 text-xs font-bold">4</span>
-                  </div>
-                  <p>QR code refreshes automatically every 5 minutes for security</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Important Notes */}
-            <div className="bg-blue-50 rounded-xl border border-blue-200 p-6">
-              <h3 className="text-lg font-semibold text-blue-900 mb-3">Important Notes</h3>
-              <ul className="space-y-2 text-sm text-blue-800">
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>This QR code is unique to you and should not be shared with others</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>QR codes expire every 5 minutes for security purposes</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>If your QR code doesn't work, try refreshing it</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Contact admin if you continue to face issues with QR scanning</span>
-                </li>
-              </ul>
-            </div>
-          </div>
+        {/* Stay Updated */}
+        <div className="text-center mt-16">
+          <p className="text-gray-600 mb-4">
+            Want to be notified when QR attendance goes live?
+          </p>
+          <button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-semibold">
+            Notify Me When Ready
+          </button>
         </div>
       </div>
     </div>

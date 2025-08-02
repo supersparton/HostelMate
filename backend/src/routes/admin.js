@@ -2634,8 +2634,20 @@ router.get('/community', async (req, res) => {
                     select: 'name email'
                 }
             })
-            .populate('votes.voters.studentId', 'userId')
-            .populate('comments.studentId', 'userId')
+            .populate({
+                path: 'votes.voters.studentId',
+                populate: {
+                    path: 'userId',
+                    select: 'name'
+                }
+            })
+            .populate({
+                path: 'comments.studentId',
+                populate: {
+                    path: 'userId',
+                    select: 'name'
+                }
+            })
             .sort({ createdAt: -1 })
             .limit(limit * 1)
             .skip((page - 1) * limit);

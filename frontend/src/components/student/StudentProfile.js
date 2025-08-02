@@ -768,6 +768,140 @@ const StudentProfile = () => {
           </div>
         </div>
 
+        {/* Permanent Registration Details */}
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-6">
+          <div className="bg-gradient-to-r from-gray-600 to-gray-800 px-6 py-4">
+            <h3 className="text-xl font-semibold text-white flex items-center gap-2">
+              <UserCheck className="w-5 h-5" />
+              Registration Details (Permanent)
+            </h3>
+            <p className="text-gray-200 text-sm mt-1">Information provided during registration - cannot be modified</p>
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Basic Registration Info */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Basic Information
+                </h4>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-sm font-medium text-blue-700">Full Name:</span>
+                    <p className="text-gray-900">{profile?.userId?.name || 'Not available'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-blue-700">Email:</span>
+                    <p className="text-gray-900">{profile?.userId?.email || 'Not available'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-blue-700">Phone:</span>
+                    <p className="text-gray-900">{profile?.userId?.phone || 'Not available'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-blue-700">Student ID:</span>
+                    <p className="text-gray-900 font-mono">{profile?.studentId || 'Not generated'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Academic Registration Info */}
+              <div className="bg-green-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                  <School className="w-4 h-4" />
+                  Academic Details
+                </h4>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-sm font-medium text-green-700">Course:</span>
+                    <p className="text-gray-900">{profile?.course || 'Not available'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-green-700">Academic Year:</span>
+                    <p className="text-gray-900">{profile?.year || 'Not available'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-green-700">Roll Number:</span>
+                    <p className="text-gray-900">{profile?.rollNumber || 'Not available'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-green-700">Registration Date:</span>
+                    <p className="text-gray-900">{formatDate(profile?.createdAt) || 'Not available'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Social & Economic Details */}
+              <div className="bg-orange-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Social & Economic Details
+                </h4>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-sm font-medium text-orange-700">Caste:</span>
+                    <p className="text-gray-900">{profile?.caste || 'Not available'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-orange-700">Religion:</span>
+                    <p className="text-gray-900">{profile?.religion || 'Not available'}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-orange-700">Family Income:</span>
+                    <p className="text-gray-900">
+                      {profile?.income ? `₹${profile.income.toLocaleString('en-IN')}` : 'Not available'}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-orange-700">Admission Status:</span>
+                    <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                      profile?.admissionStatus === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
+                      profile?.admissionStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {profile?.admissionStatus || 'PENDING'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Hostel Assignment */}
+            {(profile?.roomNumber || profile?.admissionDate) && (
+              <div className="mt-6 bg-purple-50 p-4 rounded-lg">
+                <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                  <Building className="w-4 h-4" />
+                  Hostel Assignment
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {profile?.roomNumber && (
+                    <div>
+                      <span className="text-sm font-medium text-purple-700">Room Number:</span>
+                      <p className="text-gray-900 flex items-center gap-1">
+                        <Home className="w-4 h-4 text-purple-500" />
+                        Room {profile.roomNumber}
+                        {profile?.bedLetter && (
+                          <>
+                            <Bed className="w-4 h-4 text-purple-500 ml-2" />
+                            Bed {profile.bedLetter}
+                          </>
+                        )}
+                      </p>
+                    </div>
+                  )}
+                  {profile?.admissionDate && (
+                    <div>
+                      <span className="text-sm font-medium text-purple-700">Admission Date:</span>
+                      <p className="text-gray-900">{formatDate(profile.admissionDate)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Image Upload Modal */}
         {showImageUpload && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

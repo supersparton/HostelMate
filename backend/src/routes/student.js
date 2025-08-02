@@ -29,15 +29,18 @@ const getCurrentStudent = async (req, res, next) => {
             .populate('userId', 'name email phone');
         
         if (!student) {
+            console.error('Student not found for user:', req.user._id);
             return res.status(404).json({
                 success: false,
-                message: 'Student profile not found'
+                message: 'Student profile not found. Please contact support.'
             });
         }
         
         req.student = student;
+        console.log('Student set in request:', student._id);
         next();
     } catch (error) {
+        console.error('Error in getCurrentStudent middleware:', error);
         res.status(500).json({
             success: false,
             message: 'Error fetching student profile',
@@ -985,6 +988,13 @@ router.get('/community', async (req, res) => {
                     select: 'name'
                 }
             })
+            .populate({
+                path: 'comments.studentId',
+                populate: {
+                    path: 'userId',
+                    select: 'name'
+                }
+            })
             .populate('adminResponse.respondedBy', 'name')
             .sort(sortOption)
             .limit(limit * 1)
@@ -1059,6 +1069,14 @@ router.post('/community/:postId/vote', validateObjectId('postId'), handleValidat
         const { postId } = req.params;
         const { voteType } = req.body; // 'UP' or 'DOWN'
 
+        // Check if student is available
+        if (!req.student || !req.student._id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Student profile not found. Please ensure you are logged in as a student.'
+            });
+        }
+
         if (!['UP', 'DOWN'].includes(voteType)) {
             return res.status(400).json({
                 success: false,
@@ -1074,9 +1092,22 @@ router.post('/community/:postId/vote', validateObjectId('postId'), handleValidat
             });
         }
 
+        // Initialize votes structure if it doesn't exist
+        if (!post.votes) {
+            post.votes = {
+                upvotes: 0,
+                downvotes: 0,
+                voters: []
+            };
+        }
+
+        if (!post.votes.voters) {
+            post.votes.voters = [];
+        }
+
         // Check if student already voted
         const existingVoteIndex = post.votes.voters.findIndex(
-            voter => voter.studentId.toString() === req.student._id.toString()
+            voter => voter.studentId && voter.studentId.toString() === req.student._id.toString()
         );
 
         if (existingVoteIndex !== -1) {
@@ -1086,9 +1117,9 @@ router.post('/community/:postId/vote', validateObjectId('postId'), handleValidat
             if (existingVote.voteType === voteType) {
                 post.votes.voters.splice(existingVoteIndex, 1);
                 if (voteType === 'UP') {
-                    post.votes.upvotes = Math.max(0, post.votes.upvotes - 1);
+                    post.votes.upvotes = Math.max(0, (post.votes.upvotes || 0) - 1);
                 } else {
-                    post.votes.downvotes = Math.max(0, post.votes.downvotes - 1);
+                    post.votes.downvotes = Math.max(0, (post.votes.downvotes || 0) - 1);
                 }
             } else {
                 // Change vote type
@@ -1096,11 +1127,11 @@ router.post('/community/:postId/vote', validateObjectId('postId'), handleValidat
                 existingVote.votedAt = new Date();
                 
                 if (voteType === 'UP') {
-                    post.votes.upvotes += 1;
-                    post.votes.downvotes = Math.max(0, post.votes.downvotes - 1);
+                    post.votes.upvotes = (post.votes.upvotes || 0) + 1;
+                    post.votes.downvotes = Math.max(0, (post.votes.downvotes || 0) - 1);
                 } else {
-                    post.votes.downvotes += 1;
-                    post.votes.upvotes = Math.max(0, post.votes.upvotes - 1);
+                    post.votes.downvotes = (post.votes.downvotes || 0) + 1;
+                    post.votes.upvotes = Math.max(0, (post.votes.upvotes || 0) - 1);
                 }
             }
         } else {
@@ -1112,9 +1143,9 @@ router.post('/community/:postId/vote', validateObjectId('postId'), handleValidat
             });
             
             if (voteType === 'UP') {
-                post.votes.upvotes += 1;
+                post.votes.upvotes = (post.votes.upvotes || 0) + 1;
             } else {
-                post.votes.downvotes += 1;
+                post.votes.downvotes = (post.votes.downvotes || 0) + 1;
             }
         }
 
@@ -1125,14 +1156,15 @@ router.post('/community/:postId/vote', validateObjectId('postId'), handleValidat
             message: 'Vote recorded successfully',
             data: {
                 votes: {
-                    upvotes: post.votes.upvotes,
-                    downvotes: post.votes.downvotes,
-                    netVotes: post.votes.upvotes - post.votes.downvotes
+                    upvotes: post.votes.upvotes || 0,
+                    downvotes: post.votes.downvotes || 0,
+                    netVotes: (post.votes.upvotes || 0) - (post.votes.downvotes || 0)
                 }
             }
         });
 
     } catch (error) {
+        console.error('Vote error:', error);
         res.status(500).json({
             success: false,
             message: 'Error recording vote',
@@ -1210,6 +1242,13 @@ router.get('/community/my-posts', async (req, res) => {
 
         const posts = await CommunityPost.find({ 
             studentId: req.student._id 
+        })
+        .populate({
+            path: 'comments.studentId',
+            populate: {
+                path: 'userId',
+                select: 'name'
+            }
         })
         .populate('adminResponse.respondedBy', 'name')
         .sort({ createdAt: -1 })
