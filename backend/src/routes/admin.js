@@ -2294,7 +2294,14 @@ router.patch('/leave-applications/:id/approve', validateObjectId('id'), async (r
 
         // Find the leave application
         const leaveApplication = await LeaveApplication.findById(leaveApplicationId)
-            .populate('studentId', 'name email studentId roomNumber')
+            .populate({
+                path: 'studentId',
+                select: 'studentId roomNumber userId',
+                populate: {
+                    path: 'userId',
+                    select: 'name email'
+                }
+            })
             .populate('userId', 'email');
 
         if (!leaveApplication) {
@@ -2343,7 +2350,7 @@ router.patch('/leave-applications/:id/approve', validateObjectId('id'), async (r
             await emailService.sendLeaveApprovalEmail(
                 leaveApplication.userId.email,
                 {
-                    name: leaveApplication.studentId.name,
+                    name: leaveApplication.studentId.userId.name,
                     studentId: leaveApplication.studentId.studentId,
                     roomNumber: leaveApplication.studentId.roomNumber
                 },
@@ -2405,7 +2412,14 @@ router.patch('/leave-applications/:id/reject', validateObjectId('id'), async (re
 
         // Find the leave application
         const leaveApplication = await LeaveApplication.findById(leaveApplicationId)
-            .populate('studentId', 'name email studentId roomNumber')
+            .populate({
+                path: 'studentId',
+                select: 'studentId roomNumber userId',
+                populate: {
+                    path: 'userId',
+                    select: 'name email'
+                }
+            })
             .populate('userId', 'email');
 
         if (!leaveApplication) {
@@ -2435,7 +2449,7 @@ router.patch('/leave-applications/:id/reject', validateObjectId('id'), async (re
             await emailService.sendLeaveRejectionEmail(
                 leaveApplication.userId.email,
                 {
-                    name: leaveApplication.studentId.name,
+                    name: leaveApplication.studentId.userId.name,
                     studentId: leaveApplication.studentId.studentId,
                     roomNumber: leaveApplication.studentId.roomNumber
                 },

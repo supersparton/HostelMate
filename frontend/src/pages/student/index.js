@@ -5,18 +5,10 @@ import LeaveApplication from './LeaveApplication';
 import MenuView from './MenuView';
 import ComplaintManagement from './ComplaintManagement';
 import CommunityForumComponent from '../../components/community/CommunityForum';
+import StudentProfileComponent from '../../components/student/StudentProfile';
 
 export const StudentProfile = () => (
-  <div className="min-h-screen bg-gray-50">
-    <Navigation />
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
-      <p className="text-gray-600 mt-2">View and update your profile information</p>
-      <div className="bg-white rounded-lg shadow p-6 mt-6">
-        <p className="text-gray-500">Profile management features coming soon...</p>
-      </div>
-    </div>
-  </div>
+  <StudentProfileComponent />
 );
 
 export const MenuViewPage = () => (

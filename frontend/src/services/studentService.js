@@ -39,7 +39,25 @@ const studentService = {
 
   updateProfile: (profileData) => {
     const api = createAuthApi();
-    return api.put('/student/profile', profileData);
+    return api.patch('/student/profile', profileData);
+  },
+
+  // Profile picture management
+  uploadProfilePicture: (file) => {
+    const api = createAuthApi();
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+    
+    return api.post('/student/profile/upload-picture', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  deleteProfilePicture: () => {
+    const api = createAuthApi();
+    return api.delete('/student/profile/picture');
   },
 
   // QR Code

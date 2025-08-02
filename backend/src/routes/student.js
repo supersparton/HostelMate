@@ -49,6 +49,211 @@ const getCurrentStudent = async (req, res, next) => {
 router.use(getCurrentStudent);
 
 // ======================
+// STUDENT PROFILE
+// ======================
+
+const CloudinaryService = require('../services/cloudinaryService');
+
+// Get student profile
+router.get('/profile', async (req, res) => {
+    try {
+        const student = await Student.findOne({ userId: req.user._id })
+            .populate('userId', 'name email phone createdAt');
+
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student profile not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                profile: student
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching student profile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching profile',
+            error: error.message
+        });
+    }
+});
+
+// Update student profile
+router.patch('/profile', async (req, res) => {
+    try {
+        const {
+            phone,
+            address,
+            alternatePhone,
+            parentName,
+            parentPhone,
+            emergencyContact,
+            collegeName,
+            department,
+            dateOfBirth,
+            bloodGroup,
+            nationality,
+            guardianName,
+            guardianPhone,
+            guardianRelation
+        } = req.body;
+
+        // Find the student
+        const student = await Student.findOne({ userId: req.user._id });
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student profile not found'
+            });
+        }
+
+        // Update User model fields (name, email, phone)
+        if (phone) {
+            await Student.findByIdAndUpdate(req.user._id, { phone });
+        }
+
+        // Update Student model fields
+        const updateData = {};
+        if (address) updateData.address = address;
+        if (alternatePhone) updateData.alternatePhone = alternatePhone;
+        if (parentName) updateData.parentName = parentName;
+        if (parentPhone) updateData.parentPhone = parentPhone;
+        if (emergencyContact) updateData.emergencyContact = emergencyContact;
+        if (collegeName) updateData.collegeName = collegeName;
+        if (department) updateData.department = department;
+        if (dateOfBirth) updateData.dateOfBirth = dateOfBirth;
+        if (bloodGroup) updateData.bloodGroup = bloodGroup;
+        if (nationality) updateData.nationality = nationality;
+        if (guardianName) updateData.guardianName = guardianName;
+        if (guardianPhone) updateData.guardianPhone = guardianPhone;
+        if (guardianRelation) updateData.guardianRelation = guardianRelation;
+
+        const updatedStudent = await Student.findByIdAndUpdate(
+            student._id,
+            updateData,
+            { new: true, runValidators: true }
+        ).populate('userId', 'name email phone');
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            data: {
+                profile: updatedStudent
+            }
+        });
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error updating profile',
+            error: error.message
+        });
+    }
+});
+
+// Upload profile picture
+router.post('/profile/upload-picture', CloudinaryService.getUploadMiddleware(), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No image file provided'
+            });
+        }
+
+        const student = await Student.findOne({ userId: req.user._id });
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student profile not found'
+            });
+        }
+
+        // Delete old profile picture if exists
+        if (student.profilePicture && student.profilePicture.public_id) {
+            await CloudinaryService.deleteProfilePicture(student.profilePicture.public_id);
+        }
+
+        // Upload new profile picture
+        const filename = CloudinaryService.generateFilename(student.studentId);
+        const uploadResult = await CloudinaryService.uploadProfilePicture(req.file.buffer, filename);
+
+        // Update student profile with new picture
+        const updatedStudent = await Student.findByIdAndUpdate(
+            student._id,
+            {
+                profilePicture: {
+                    public_id: uploadResult.public_id,
+                    secure_url: uploadResult.secure_url
+                }
+            },
+            { new: true }
+        ).populate('userId', 'name email phone');
+
+        res.json({
+            success: true,
+            message: 'Profile picture uploaded successfully',
+            data: {
+                profile: updatedStudent,
+                profilePicture: uploadResult
+            }
+        });
+    } catch (error) {
+        console.error('Error uploading profile picture:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error uploading profile picture',
+            error: error.message
+        });
+    }
+});
+
+// Delete profile picture
+router.delete('/profile/picture', async (req, res) => {
+    try {
+        const student = await Student.findOne({ userId: req.user._id });
+        if (!student) {
+            return res.status(404).json({
+                success: false,
+                message: 'Student profile not found'
+            });
+        }
+
+        // Delete from Cloudinary
+        if (student.profilePicture && student.profilePicture.public_id) {
+            await CloudinaryService.deleteProfilePicture(student.profilePicture.public_id);
+        }
+
+        // Remove from database
+        const updatedStudent = await Student.findByIdAndUpdate(
+            student._id,
+            { $unset: { profilePicture: 1 } },
+            { new: true }
+        ).populate('userId', 'name email phone');
+
+        res.json({
+            success: true,
+            message: 'Profile picture deleted successfully',
+            data: {
+                profile: updatedStudent
+            }
+        });
+    } catch (error) {
+        console.error('Error deleting profile picture:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting profile picture',
+            error: error.message
+        });
+    }
+});
+
+// ======================
 // DASHBOARD
 // ======================
 

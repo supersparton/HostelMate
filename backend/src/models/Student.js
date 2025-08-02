@@ -44,6 +44,57 @@ const studentSchema = new mongoose.Schema({
         pincode: String
     },
     
+    // Profile Information
+    profilePicture: {
+        public_id: String, // Cloudinary public_id
+        secure_url: String  // Cloudinary secure URL
+    },
+    
+    // Additional Contact Information
+    alternatePhone: {
+        type: String,
+        match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
+    },
+    
+    // College Information
+    collegeName: {
+        type: String,
+        trim: true
+    },
+    department: {
+        type: String,
+        trim: true
+    },
+    
+    // Additional Personal Details
+    dateOfBirth: {
+        type: Date
+    },
+    bloodGroup: {
+        type: String,
+        enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', null],
+        default: null
+    },
+    nationality: {
+        type: String,
+        default: 'Indian',
+        trim: true
+    },
+    
+    // Guardian Information (additional to parent)
+    guardianName: {
+        type: String,
+        trim: true
+    },
+    guardianPhone: {
+        type: String,
+        match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
+    },
+    guardianRelation: {
+        type: String,
+        trim: true
+    },
+    
     // Hostel Information
     roomNumber: {
         type: String,
